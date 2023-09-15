@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use serde::{Deserialize, Deserializer, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
@@ -114,7 +116,15 @@ impl<'de> Deserialize<'de> for TransportMode {
     {
         let binding: String = String::deserialize(deserializer)?;
         let mode: &str = binding.as_str();
-        let t: Self = match mode {
+        Ok(Self::from_str(mode).unwrap())
+    }
+}
+
+impl FromStr for TransportMode {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let t: Self = match s {
             "A" => Self::Lift,
             "B" => Self::Bus,
             "E" => Self::Chairlift,

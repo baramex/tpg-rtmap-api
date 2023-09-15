@@ -1,9 +1,11 @@
-use serde::{Serialize, Deserializer, Deserialize};
+use std::str::FromStr;
+
+use serde::{Deserialize, Deserializer, Serialize};
 
 #[derive(Serialize, Eq, PartialEq, Debug)]
 pub enum Direction {
     Outward,
-    Return
+    Return,
 }
 
 impl<'de> Deserialize<'de> for Direction {
@@ -13,10 +15,18 @@ impl<'de> Deserialize<'de> for Direction {
     {
         let binding: String = String::deserialize(deserializer)?;
         let mode: &str = binding.as_str();
-        let t: Self = match mode {
+        Ok(Self::from_str(mode).unwrap())
+    }
+}
+
+impl FromStr for Direction {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let t: Self = match s {
             "H" => Self::Outward,
             "R" => Self::Return,
-            _ => panic!("Unknown direction: {}", mode),
+            _ => panic!("Unknown direction: {}", s),
         };
         Ok(t)
     }

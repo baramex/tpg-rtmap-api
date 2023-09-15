@@ -18,5 +18,5 @@ sqlx = { version = "^0.7", features = ["postgres", "runtime-tokio-rustls"] }
 csv = "1.2.2"
 dotenv = "0.15.0"
 chrono = "0.4.26"
-fixed_width = "0.5.1"
-fixed_width_derive = "0.5.1"
+serde_json = "1.0.105"
+unicode-segmentation = "1.10.1"
