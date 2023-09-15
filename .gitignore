@@ -1,3 +1,4 @@
 /target
 /src/gtfs/*
+/src/hrdf/*
 .vscode
