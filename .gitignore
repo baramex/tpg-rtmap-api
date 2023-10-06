@@ -2,3 +2,4 @@
 /src/gtfs/*
 /src/hrdf/*
 .vscode
+.env
