@@ -2,7 +2,7 @@ use serde::Serialize;
 use sqlx::FromRow;
 use uuid::Uuid;
 
-#[derive(Serialize, FromRow, Debug, Clone)]
+#[derive(Serialize, FromRow, Debug)]
 pub struct Stop {
     pub id: String,
     pub reference: String,
