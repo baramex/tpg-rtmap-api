@@ -1,14 +1,17 @@
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::model::{
-    enums::{Direction, ColorType},
-    line::{Line, TransportMode}, bitfield::Bitfield, stop::Stop,
+    bitfield::Bitfield,
+    enums::{ColorType, Direction},
+    line::{Line, TransportMode},
+    stop::Stop,
+    trip::Trip, trip_stop::TripStop,
 };
 use std::{
+    cmp,
     fs::File,
     io::{BufRead, BufReader, Error, Lines},
     path::PathBuf,
-    cmp
 };
 
 pub struct HRDF {
@@ -276,6 +279,60 @@ impl HRDF {
         }
 
         return stop_ids;
+    }
+
+    pub fn to_trips(&self, fahrplans: Vec<Fahrplan>) -> Vec<Trip> {
+        let mut trips: Vec<Trip> = Vec::new();
+        let mut i: u32 = 0;
+
+        for fahrplan in fahrplans {
+            let trip: Trip = Trip {
+                id: i,
+                journey_number: fahrplan.z.journey_number,
+                option_count: fahrplan.z.option_count,
+                transport_mode: fahrplan.g.transport_mode,
+                origin: fahrplan.g.origin,
+                destination: fahrplan.g.destination,
+                bitfield_id: fahrplan.a.bit_field_number,
+                line_id: fahrplan.l.line_number,
+                direction: fahrplan.r.direction,
+                departure_time: fahrplan.stops[0].departure_time.clone(),
+                arrival_time: fahrplan.stops[fahrplan.stops.len() - 1].arrival_time.clone(),
+            };
+
+            trips.push(trip);
+            i += 1;
+        }
+
+        return trips;
+    }
+
+    pub fn to_trip_stops(&self, fahrplans: Vec<Fahrplan>) -> Vec<TripStop> {
+        let mut trip_stops: Vec<TripStop> = Vec::new();
+        let mut i: u32 = 0;
+        let mut a: u32 = 0;
+
+        for fahrplan in fahrplans {
+            let mut j: u8 = 0;
+
+            for stop in fahrplan.stops {
+                let trip_stop: TripStop = TripStop {
+                    id: a,
+                    trip_id: i,
+                    sequence: j,
+                    arrival_time: stop.arrival_time,
+                    departure_time: stop.departure_time,
+                };
+
+                trip_stops.push(trip_stop);
+                j += 1;
+                a += 1;
+            }
+
+            i += 1;
+        }
+
+        return trip_stops;
     }
 
     pub fn get_fahrplans(&self) -> Result<Vec<Fahrplan>, Error> {
