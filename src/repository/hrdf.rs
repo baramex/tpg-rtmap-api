@@ -150,15 +150,13 @@ linie:
 LINIE field values...
 field = K:name|N:T name|F:colortype|B:color
 
-feiertag ?:
-jours fériés
-
 bitfield:
 bit_field_number bit_field
 bitfield: 1 hexa = 4 bits, 4 bits = 4 days (0|1)
 2firsts and 2 lasts are inserted
 
 gleise: platform info
+?: line path information ?
 */
 
 impl HRDF {

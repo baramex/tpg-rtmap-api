@@ -148,7 +148,7 @@ impl GTFS {
         Ok(raw)
     }
 
-    pub fn get_stops_from_haltestellen(
+    /*pub fn get_stops_from_haltestellen(
         &self,
         haltestellen: Vec<RawHaltestellen>,
         all_stops: &Vec<Stop>,
@@ -169,7 +169,7 @@ impl GTFS {
         }
 
         stops
-    }
+    }*/
 
     pub fn read_all_stops(&self) -> Result<Vec<Stop>, ReadError> {
         let raw_stops: Vec<RawStop> = self.read_file::<RawStop>("stops.txt")?;
@@ -188,7 +188,7 @@ impl GTFS {
         Ok(stops)
     }
 
-    pub fn get_stop_in_stops(&self, id: &str, stops: &Vec<Stop>) -> Option<Stop> {
+    /*pub fn get_stop_in_stops(&self, id: &str, stops: &Vec<Stop>) -> Option<Stop> {
         for stop in stops {
             if stop.reference.eq(id) {
                 return Some(stop.clone());
@@ -196,5 +196,5 @@ impl GTFS {
         }
 
         None
-    }
+    }*/
 }
