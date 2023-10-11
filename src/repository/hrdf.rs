@@ -2,7 +2,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::model::{
     enums::{Direction, ColorType},
-    line::{Line, TransportMode},
+    line::{Line, TransportMode}, bitfield::Bitfield,
 };
 use std::{
     fs::File,
@@ -118,6 +118,13 @@ define_record! {
     }
 }
 
+define_record! {
+    RawBitfeld {
+        number: u32 => 0 => 6,
+        days: String => 7 => 99,
+    }
+}
+
 #[derive(Debug)]
 pub struct Fahrplan {
     pub z: RawFahrplanZ,
@@ -160,6 +167,26 @@ impl HRDF {
         let reader: BufReader<File> = BufReader::new(File::open(path)?);
 
         return Ok(reader);
+    }
+
+    pub fn get_bitfields(&self) -> Result<Vec<Bitfield>, Error> {
+        let reader: BufReader<File> = self.create_reader("BITFELD")?;
+        let mut lines: Lines<BufReader<File>> = reader.lines();
+
+        let mut bitfields: Vec<Bitfield> = Vec::new();
+
+        while let Some(Ok(line)) = lines.next() {
+            let bf_line: RawBitfeld = RawBitfeld::from_line(&line);
+
+            let bitfield: Bitfield = Bitfield {
+                id: bf_line.number,
+                days: bf_line.days,
+            };
+
+            bitfields.push(bitfield);
+        }
+
+        return Ok(bitfields);
     }
 
     pub fn get_lines(&self) -> Result<Vec<Line>, Error> {
@@ -254,7 +281,7 @@ impl HRDF {
                     r: line_r.unwrap(),
                     stops,
                 };
-                
+
                 fplans.push(fplan);
             }
         }

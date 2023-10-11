@@ -10,6 +10,7 @@ use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 use dotenv::dotenv;
 use model::{
     line::{Line, TransportMode},
+    bitfield::Bitfield,
     stop::Stop,
 };
 use repository::{
@@ -62,8 +63,10 @@ async fn main() -> std::io::Result<()> {
     };
     /*let fahrplans: Vec<Fahrplan> = hrdf.get_fahrplans().unwrap();
     println!("{:#?}", fahrplans);*/
-    let lines: Vec<Line> = hrdf.get_lines().unwrap();
-    println!("{:#?}", lines);
+    /*let lines: Vec<Line> = hrdf.get_lines().unwrap();
+    println!("{:#?}", lines);*/
+    let bitfields: Vec<Bitfield> = hrdf.get_bitfields().unwrap();
+    println!("{:#?}", bitfields);
 
     // init http server
     HttpServer::new(move || {
