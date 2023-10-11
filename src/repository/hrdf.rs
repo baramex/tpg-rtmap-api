@@ -2,7 +2,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::model::{
     enums::{Direction, ColorType},
-    line::{Line, TransportMode}, bitfield::Bitfield,
+    line::{Line, TransportMode}, bitfield::Bitfield, stop::Stop,
 };
 use std::{
     fs::File,
@@ -90,7 +90,7 @@ define_record! {
 
 define_record! {
     RawFahrplanStop {
-        stop_id: u32 => 0 => 7,
+        id: u32 => 0 => 7,
         name: String => 8 => 28,
         arrival_time: String => 30 => 35,
         departure_time: String => 37 => 42,
@@ -122,6 +122,15 @@ define_record! {
     RawBitfeld {
         number: u32 => 0 => 6,
         days: String => 7 => 99,
+    }
+}
+
+define_record! {
+    RawStop {
+        id: u32 => 0 => 7,
+        lat: f64 => 11 => 18,
+        lon: f64 => 21 => 29,
+        name: String => 40 => 90,
     }
 }
 
@@ -229,6 +238,44 @@ impl HRDF {
         }
 
         return Ok(linies);
+    }
+
+    pub fn retreive_stops(&self, ids: Vec<u32>) -> Result<Vec<Stop>, Error> {
+        let reader: BufReader<File> = self.create_reader("HALTESTELLEN")?;
+        let mut lines: Lines<BufReader<File>> = reader.lines();
+
+        let mut stops: Vec<Stop> = Vec::new();
+
+        while let Some(Ok(line)) = lines.next() {
+            let stop: RawStop = RawStop::from_line(&line);
+
+            if ids.contains(&stop.id) {
+                let stop: Stop = Stop {
+                    id: stop.id,
+                    name: stop.name,
+                    latitude: stop.lat,
+                    longitude: stop.lon,
+                };
+
+                stops.push(stop);
+            }
+        }
+
+        return Ok(stops);
+    }
+
+    pub fn extract_stop_ids(&self, fahrplans: Vec<Fahrplan>) -> Vec<u32> {
+        let mut stop_ids: Vec<u32> = Vec::new();
+
+        for fahrplan in fahrplans {
+            for stop in fahrplan.stops {
+                if !stop_ids.contains(&stop.id) {
+                    stop_ids.push(stop.id);
+                }
+            }
+        }
+
+        return stop_ids;
     }
 
     pub fn get_fahrplans(&self) -> Result<Vec<Fahrplan>, Error> {
