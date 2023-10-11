@@ -4,6 +4,8 @@ use serde::{Deserialize, Deserializer, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
 
+use super::enums::ColorType;
+
 #[derive(Serialize, Debug, PartialEq, Clone)]
 pub enum TransportMode {
     Underground,
@@ -331,28 +333,7 @@ impl<'de> Deserialize<'de> for LineDescription {
 #[derive(Serialize, FromRow, Debug)]
 pub struct Line {
     pub id: String,
-    pub reference: String,
     pub name: String,
+    pub color_type: ColorType,
     pub color: String,
-    pub description: LineDescription,
-    pub mode: TransportMode,
-}
-
-impl Line {
-    pub fn new(
-        reference: String,
-        name: String,
-        color: String,
-        description: LineDescription,
-        mode: TransportMode,
-    ) -> Self {
-        Self {
-            id: Uuid::new_v4().to_string(),
-            reference,
-            name,
-            color,
-            description,
-            mode,
-        }
-    }
 }
