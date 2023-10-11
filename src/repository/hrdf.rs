@@ -1,10 +1,14 @@
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::model::{enums::Direction, line::{TransportMode, Line}};
+use crate::model::{
+    enums::{Direction, ColorType},
+    line::{Line, TransportMode},
+};
 use std::{
     fs::File,
     io::{BufRead, BufReader, Error, Lines},
     path::PathBuf,
+    cmp
 };
 
 pub struct HRDF {
@@ -31,7 +35,7 @@ macro_rules! define_record {
             pub fn from_line(line: &str) -> Self {
                 $(
                     let chars: Vec<&str> = UnicodeSegmentation::graphemes(line, true).collect();
-                    let $field_name: $field_type = chars[$start..$end].join("").to_string().trim().parse::<$field_type>().unwrap_or_else(|_| panic!("Failed to parse field {} from {}", stringify!($field_name), line[$start..$end].to_string()));
+                    let $field_name: $field_type = chars[$start..cmp::min($end, chars.len())].join("").to_string().trim().parse::<$field_type>().unwrap_or_else(|_| panic!("Failed to parse field {} from {}", stringify!($field_name), line[$start..cmp::min($end, chars.len())].to_string()));
                 )*
                 $record_name {
                     $(
@@ -96,28 +100,21 @@ define_record! {
 define_record! {
     RawLinieN {
         number: u32 => 0 => 7,
-        name: String => 13 => 22,
-    }
-}
-
-define_record! {
-    RawLinieK {
-        number: u32 => 0 => 7,
-        name: String => 11 => 20,
+        name: String => 12 => 22,
     }
 }
 
 define_record! {
     RawLinieF {
         number: u32 => 0 => 7,
-        color: String => 11 => 21,
+        color_type: ColorType => 10 => 21,
     }
 }
 
 define_record! {
     RawLinieB {
         number: u32 => 0 => 7,
-        color: String => 11 => 21,
+        color: String => 10 => 21,
     }
 }
 
@@ -165,8 +162,48 @@ impl HRDF {
         return Ok(reader);
     }
 
-    pub fn get_lines(&self) -> Vec<Line> {
-        
+    pub fn get_lines(&self) -> Result<Vec<Line>, Error> {
+        let reader: BufReader<File> = self.create_reader("LINIE")?;
+        let mut lines: Lines<BufReader<File>> = reader.lines();
+
+        let mut linies: Vec<Line> = Vec::new();
+
+        while let Some(Ok(line)) = lines.next() {
+            let field: &str = &line[8..9];
+
+            if field == "N" {
+                let line_n: RawLinieN = RawLinieN::from_line(&line);
+                let mut line_f: Option<RawLinieF> = None;
+                let mut line_b: Option<RawLinieB> = None;
+
+                while let Some(Ok(line2)) = lines.next() {
+                    let field: &str = &line2[8..9];
+
+                    if field == "F" {
+                        line_f = Some(RawLinieF::from_line(&line2));
+                    } else if field == "B" {
+                        line_b = Some(RawLinieB::from_line(&line2));
+                    } else {
+                        break;
+                    }
+                }
+
+                if line_f.is_none() || line_b.is_none() {
+                    continue;
+                }
+
+                let linie: Line = Line {
+                    id: line_n.number,
+                    name: line_n.name,
+                    color_type: line_f.unwrap().color_type,
+                    color: line_b.unwrap().color,
+                };
+
+                linies.push(linie);
+            }
+        }
+
+        return Ok(linies);
     }
 
     pub fn get_fahrplans(&self) -> Result<Vec<Fahrplan>, Error> {
@@ -183,7 +220,6 @@ impl HRDF {
                     continue;
                 }
 
-                println!("Found a fplan from the right agency {:#?}", line_z);
                 let mut line_g: Option<RawFahrplanG> = None;
                 let mut line_a: Option<RawFahrplanA> = None;
                 let mut line_l: Option<RawFahrplanL> = None;
@@ -207,10 +243,6 @@ impl HRDF {
                 }
 
                 if line_g.is_none() || line_a.is_none() || line_l.is_none() || line_r.is_none() {
-                    println!(
-                        "invalid entry {:?} {:?} {:?} {:?} {:?}",
-                        line_g, line_a, line_l, line_r, stops
-                    );
                     continue;
                 }
 
@@ -222,8 +254,7 @@ impl HRDF {
                     r: line_r.unwrap(),
                     stops,
                 };
-
-                println!("New valid entry {:#?}", fplan);
+                
                 fplans.push(fplan);
             }
         }

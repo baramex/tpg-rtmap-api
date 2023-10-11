@@ -2,7 +2,6 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Deserializer, Serialize};
 use sqlx::FromRow;
-use uuid::Uuid;
 
 use super::enums::ColorType;
 
@@ -332,7 +331,7 @@ impl<'de> Deserialize<'de> for LineDescription {
 
 #[derive(Serialize, FromRow, Debug)]
 pub struct Line {
-    pub id: String,
+    pub id: u32,
     pub name: String,
     pub color_type: ColorType,
     pub color: String,

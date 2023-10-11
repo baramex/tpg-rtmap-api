@@ -57,11 +57,13 @@ async fn main() -> std::io::Result<()> {
     println!("{:#?}", stops);*/
 
     let hrdf: HRDF = HRDF {
-        directory: Path::new("/Users/baramex/Desktop/tpg-rtmap-api/src/hrdf").to_path_buf(),
+        directory: Path::new("C:\\Users\\blond\\Bureau\\tpg-rtmap-api\\src\\hrdf").to_path_buf(),
         agency_id: env::var("AGENCY_ID").unwrap().parse::<u16>().unwrap(),
     };
-    let fahrplans: Vec<Fahrplan> = hrdf.get_fahrplans().unwrap();
-    println!("{:#?}", fahrplans);
+    /*let fahrplans: Vec<Fahrplan> = hrdf.get_fahrplans().unwrap();
+    println!("{:#?}", fahrplans);*/
+    let lines: Vec<Line> = hrdf.get_lines().unwrap();
+    println!("{:#?}", lines);
 
     // init http server
     HttpServer::new(move || {

@@ -8,6 +8,19 @@ pub enum ColorType {
     Light
 }
 
+impl FromStr for ColorType {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let t: Self = match s {
+            "255 255 255" => Self::Light,
+            "000 000 000" => Self::Dark,
+            _ => panic!("Unknown color type: {}", s),
+        };
+        Ok(t)
+    }
+}
+
 #[derive(Serialize, Eq, PartialEq, Debug)]
 pub enum Direction {
     Outward,
