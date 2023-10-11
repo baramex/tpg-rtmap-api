@@ -171,7 +171,7 @@ impl GTFS {
         stops
     }*/
 
-    pub fn read_all_stops(&self) -> Result<Vec<Stop>, ReadError> {
+    /*pub fn read_all_stops(&self) -> Result<Vec<Stop>, ReadError> {
         let raw_stops: Vec<RawStop> = self.read_file::<RawStop>("stops.txt")?;
 
         let mut stops: Vec<Stop> = Vec::new();
@@ -186,7 +186,7 @@ impl GTFS {
         }
 
         Ok(stops)
-    }
+    }*/
 
     /*pub fn get_stop_in_stops(&self, id: &str, stops: &Vec<Stop>) -> Option<Stop> {
         for stop in stops {

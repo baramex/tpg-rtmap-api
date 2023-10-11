@@ -7,6 +7,7 @@ use super::{line::TransportMode, enums::Direction};
 pub struct TripStop {
     id: u32,
     trip_id: u32,
+    sequence: u8,
     arrival_time: String,
     departure_time: String,
 }
