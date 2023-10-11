@@ -105,7 +105,7 @@ impl GTFS {
         }
     }
 
-    pub fn read_lines(&self, modes: Vec<TransportMode>) -> Result<Vec<Line>, ReadError> {
+    /*pub fn read_lines(&self, modes: Vec<TransportMode>) -> Result<Vec<Line>, ReadError> {
         let routes: Vec<RawRoute> = self.read_file::<RawRoute>("routes.txt")?;
 
         let mut lines: Vec<Line> = Vec::new();
@@ -125,7 +125,7 @@ impl GTFS {
         }
 
         Ok(lines)
-    }
+    }*/
 
     pub fn read_haltestellen(
         &self,
