@@ -1,6 +1,6 @@
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::model::{enums::Direction, line::TransportMode};
+use crate::model::{enums::Direction, line::{TransportMode, Line}};
 use std::{
     fs::File,
     io::{BufRead, BufReader, Error, Lines},
@@ -93,6 +93,34 @@ define_record! {
     }
 }
 
+define_record! {
+    RawLinieN {
+        number: u32 => 0 => 7,
+        name: String => 13 => 22,
+    }
+}
+
+define_record! {
+    RawLinieK {
+        number: u32 => 0 => 7,
+        name: String => 11 => 20,
+    }
+}
+
+define_record! {
+    RawLinieF {
+        number: u32 => 0 => 7,
+        color: String => 11 => 21,
+    }
+}
+
+define_record! {
+    RawLinieB {
+        number: u32 => 0 => 7,
+        color: String => 11 => 21,
+    }
+}
+
 #[derive(Debug)]
 pub struct Fahrplan {
     pub z: RawFahrplanZ,
@@ -135,6 +163,10 @@ impl HRDF {
         let reader: BufReader<File> = BufReader::new(File::open(path)?);
 
         return Ok(reader);
+    }
+
+    pub fn get_lines(&self) -> Vec<Line> {
+        
     }
 
     pub fn get_fahrplans(&self) -> Result<Vec<Fahrplan>, Error> {

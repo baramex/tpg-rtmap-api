@@ -2,6 +2,12 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Deserializer, Serialize};
 
+#[derive(Serialize, Debug)]
+pub enum ColorType {
+    Dark,
+    Light
+}
+
 #[derive(Serialize, Eq, PartialEq, Debug)]
 pub enum Direction {
     Outward,
