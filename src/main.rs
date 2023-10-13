@@ -60,10 +60,10 @@ async fn main() -> std::io::Result<()> {
 
     let hrdf: HRDF = HRDF {
         directory: Path::new(&env::var("HRDF_PATH").unwrap().parse::<String>().unwrap()).to_path_buf(),
-        agency_id: env::var("AGENCY_ID").unwrap().parse::<u32>().unwrap(),
+        agency_id: env::var("AGENCY_ID").unwrap().parse::<String>().unwrap(),
     };
     let fahrplans: Vec<Fahrplan> = hrdf.get_fahrplans().unwrap();
-    println!("Got fahrplans !");
+    println!("Got fahrplans ! {:#?}", fahrplans);
     //println!("{:#?}", fahrplans);
     /*let lines: Vec<Line> = hrdf.get_lines().unwrap();
     println!("{:#?}", lines);*/
