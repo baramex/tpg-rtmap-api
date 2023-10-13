@@ -244,7 +244,7 @@ impl HRDF {
     }
 
     pub fn retreive_stops(&self, ids: Vec<u32>) -> Result<Vec<Stop>, Error> {
-        let reader: BufReader<File> = self.create_reader("HALTESTELLEN")?;
+        let reader: BufReader<File> = self.create_reader("BFKOORD_WGS")?;
         let mut lines: Lines<BufReader<File>> = reader.lines();
 
         let mut stops: Vec<Stop> = Vec::new();
