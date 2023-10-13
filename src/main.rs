@@ -73,7 +73,7 @@ async fn main() -> std::io::Result<()> {
     let stops_id: Vec<u32> = hrdf.extract_stop_ids(fahrplans);
     println!("{:#?}", stops_id);
 
-    let stops: Vec<Stop> = hrdf.retreive_stops(stops_id).unwrap();
+    let stops: Vec<Stop> = hrdf.retrieve_stops(stops_id).unwrap();
     println!("{:#?}", stops);
 
     // init http server
