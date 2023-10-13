@@ -12,6 +12,7 @@ use model::{
     line::{Line, TransportMode},
     bitfield::Bitfield,
     stop::Stop,
+    trip::Trip,
 };
 use repository::{
     database::Database,
@@ -58,15 +59,18 @@ async fn main() -> std::io::Result<()> {
     println!("{:#?}", stops);*/
 
     let hrdf: HRDF = HRDF {
-        directory: Path::new("C:\\Users\\blond\\Bureau\\tpg-rtmap-api\\src\\hrdf").to_path_buf(),
-        agency_id: env::var("AGENCY_ID").unwrap().parse::<u16>().unwrap(),
+        directory: Path::new(&env::var("HRDF_PATH").unwrap().parse::<String>().unwrap()).to_path_buf(),
+        agency_id: env::var("AGENCY_ID").unwrap().parse::<u32>().unwrap(),
     };
-    /*let fahrplans: Vec<Fahrplan> = hrdf.get_fahrplans().unwrap();
-    println!("{:#?}", fahrplans);*/
+    let fahrplans: Vec<Fahrplan> = hrdf.get_fahrplans().unwrap();
+    println!("Got fahrplans !");
+    //println!("{:#?}", fahrplans);
     /*let lines: Vec<Line> = hrdf.get_lines().unwrap();
     println!("{:#?}", lines);*/
-    let bitfields: Vec<Bitfield> = hrdf.get_bitfields().unwrap();
-    println!("{:#?}", bitfields);
+    /*let bitfields: Vec<Bitfield> = hrdf.get_bitfields().unwrap();
+    println!("{:#?}", bitfields);*/
+    let trips: Vec<Trip> = hrdf.to_trips(fahrplans);
+    println!("{:#?}", trips);
 
     // init http server
     HttpServer::new(move || {

@@ -16,7 +16,7 @@ use std::{
 
 pub struct HRDF {
     pub directory: PathBuf,
-    pub agency_id: u16,
+    pub agency_id: u32,
 }
 
 macro_rules! define_record {
@@ -53,7 +53,7 @@ macro_rules! define_record {
 define_record! {
     RawFahrplanZ {
         journey_number: u32 => 3 => 9,
-        agency_id: u16 => 10 => 16,
+        agency_id: u32 => 10 => 16,
         option_count: u16 => 19 => 22,
     }
 }
@@ -384,6 +384,7 @@ impl HRDF {
                     stops,
                 };
 
+                println!("Found fplan !");
                 fplans.push(fplan);
             }
         }
