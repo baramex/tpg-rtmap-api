@@ -13,6 +13,7 @@ use model::{
     bitfield::Bitfield,
     stop::Stop,
     trip::Trip,
+    trip_stop::TripStop,
 };
 use repository::{
     database::Database,
@@ -69,8 +70,11 @@ async fn main() -> std::io::Result<()> {
     println!("{:#?}", lines);*/
     /*let bitfields: Vec<Bitfield> = hrdf.get_bitfields().unwrap();
     println!("{:#?}", bitfields);*/
-    let trips: Vec<Trip> = hrdf.to_trips(fahrplans);
-    println!("{:#?}", trips);
+    let stops_id: Vec<u32> = hrdf.extract_stop_ids(fahrplans);
+    println!("{:#?}", stops_id);
+
+    let stops: Vec<Stop> = hrdf.retreive_stops(stops_id).unwrap();
+    println!("{:#?}", stops);
 
     // init http server
     HttpServer::new(move || {
