@@ -10,7 +10,7 @@ pub struct Bitfield {
 }
 
 impl Bitfield {
-    pub async fn create_table(database: Database) -> Result<PgQueryResult, Error> {
+    pub async fn create_table(database: &Database) -> Result<PgQueryResult, Error> {
         database.query("CREATE TABLE IF NOT EXISTS bitfield (
             id INTEGER PRIMARY KEY,
             days VARCHAR NOT NULL
