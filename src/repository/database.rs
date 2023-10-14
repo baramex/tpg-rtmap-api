@@ -1,5 +1,5 @@
 use log::error;
-use sqlx::postgres::{PgPool, PgPoolOptions, PgRow};
+use sqlx::postgres::{PgPool, PgPoolOptions, PgRow, PgQueryResult};
 use sqlx::Error;
 
 #[derive(Clone)]
@@ -12,6 +12,10 @@ impl Database {
         Ok(Database {
             pool: config.connect(url).await?,
         })
+    }
+
+    pub async fn query(&self, query: &str) -> Result<PgQueryResult, Error> {
+        return sqlx::query(query).execute(&self.pool).await;
     }
 
     pub async fn get<T>(&self, query: &str) -> Option<Vec<T>>
