@@ -2,22 +2,17 @@ mod api;
 mod model;
 mod repository;
 
+use crate::repository::database::Table;
+
 use std::{env, path::Path};
 
 //use api::line::get_line;
 
 use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 use dotenv::dotenv;
-use model::{
-    line::{Line, TransportMode},
-    bitfield::Bitfield,
-    stop::Stop,
-    trip::Trip,
-    trip_stop::TripStop,
-};
+use model::{bitfield::Bitfield, line::Line, stop::Stop, trip::Trip, trip_stop::TripStop};
 use repository::{
     database::Database,
-    gtfs::{RawHaltestellen, GTFS},
     hrdf::{Fahrplan, HRDF},
 };
 use sqlx::postgres::PgPoolOptions;
@@ -61,23 +56,82 @@ async fn main() -> std::io::Result<()> {
 
     // init database: create tables
     let _ = Bitfield::create_table(&database).await;
+    let _ = Line::create_table(&database).await;
+    let _ = Stop::create_table(&database).await;
+    let _ = Trip::create_table(&database).await;
+    let _ = TripStop::create_table(&database).await;
 
+    // retrieve data from hrdf and insert into database
     let hrdf: HRDF = HRDF {
-        directory: Path::new(&env::var("HRDF_PATH").unwrap().parse::<String>().unwrap()).to_path_buf(),
+        directory: Path::new(&env::var("HRDF_PATH").unwrap().parse::<String>().unwrap())
+            .to_path_buf(),
         agency_id: env::var("AGENCY_ID").unwrap().parse::<String>().unwrap(),
     };
-    let fahrplans: Vec<Fahrplan> = hrdf.get_fahrplans().unwrap();
-    println!("Got fahrplans ! {:#?}", fahrplans);
-    //println!("{:#?}", fahrplans);
-    /*let lines: Vec<Line> = hrdf.get_lines().unwrap();
-    println!("{:#?}", lines);*/
-    /*let bitfields: Vec<Bitfield> = hrdf.get_bitfields().unwrap();
-    println!("{:#?}", bitfields);*/
-    let stops_id: Vec<u32> = hrdf.extract_stop_ids(fahrplans);
-    println!("{:#?}", stops_id);
 
-    let stops: Vec<Stop> = hrdf.retrieve_stops(stops_id).unwrap();
-    println!("{:#?}", stops);
+    let insert_bitfields = false;
+    let insert_lines = false;
+    let insert_stops = false;
+    let insert_trips = true;
+    let insert_trip_stops = true;
+
+    let mut fahrplans: Vec<Fahrplan> = Vec::new();
+
+    if insert_bitfields {
+        println!("Getting bitfields...");
+        let bitfields: Vec<Bitfield> = hrdf.get_bitfields().unwrap();
+        println!("Got bitfields: {}", bitfields.len());
+
+        println!("Inserting bitfields...");
+        let _b = Database::insert_many::<Bitfield>(&database, &bitfields).await;
+        println!("Inserted bitfields");
+    }
+
+    if insert_lines {
+        println!("Getting lines...");
+        let lines: Vec<Line> = hrdf.get_lines().unwrap();
+        println!("Got lines: {}", lines.len());
+
+        println!("Inserting lines...");
+        let _l = Database::insert_many::<Line>(&database, &lines).await;
+        println!("Inserted lines");
+    }
+
+    if insert_trips || insert_trip_stops || insert_stops {
+        println!("Getting fahrplans...");
+        fahrplans = hrdf.get_fahrplans().unwrap();
+        println!("Got fahrplans: {}", fahrplans.len());
+    }
+
+    if insert_stops {
+        println!("Getting stops...");
+        let stops_id: Vec<u32> = hrdf.extract_stop_ids(&fahrplans);
+        let stops: Vec<Stop> = hrdf.retrieve_stops(stops_id).unwrap();
+        println!("Got stops: {}", stops.len());
+
+        println!("Inserting stops...");
+        let _s = Database::insert_many::<Stop>(&database, &stops).await;
+        println!("Inserted stops");
+    }
+
+    if insert_trips {
+        println!("Getting trips...");
+        let trips: Vec<Trip> = hrdf.to_trips(&fahrplans);
+        println!("Got trips: {}", trips.len());
+
+        println!("Inserting trips...");
+        let _t = Database::insert_many::<Trip>(&database, &trips).await;
+        println!("Inserted trips");
+    }
+
+    if insert_trip_stops {
+        println!("Getting trip stops...");
+        let trip_stops: Vec<TripStop> = hrdf.to_trip_stops(&fahrplans);
+        println!("Got trip stops: {}", trip_stops.len());
+
+        println!("Inserting trip stops...");
+        let _ts = Database::insert_many::<TripStop>(&database, &trip_stops).await;
+        println!("Inserted trip stops");
+    }
 
     // init http server
     HttpServer::new(move || {

@@ -1,11 +1,14 @@
+use async_trait::async_trait;
 use std::str::FromStr;
 
 use serde::{Deserialize, Deserializer, Serialize};
-use sqlx::FromRow;
+use sqlx::{FromRow, postgres::PgQueryResult, Error};
+
+use crate::repository::database::{Database, Table};
 
 use super::enums::ColorType;
 
-#[derive(Serialize, Debug, PartialEq, Clone)]
+#[derive(Serialize, Debug, PartialEq, Clone, Copy)]
 pub enum TransportMode {
     Underground,
     Bus,
@@ -335,4 +338,32 @@ pub struct Line {
     pub name: String,
     pub color_type: ColorType,
     pub color: String,
+}
+
+#[async_trait]
+impl Table for  Line {
+    const TABLE_NAME: &'static str = "lines";
+
+    fn format(&self) -> String {
+        format!(
+            "({},'{}','{:?}','{}')",
+            self.id,
+            self.name,
+            self.color_type,
+            self.color
+        )
+    }
+
+    fn keys() -> String {
+        return "(id,name,color_type,color)".to_string();
+    }
+
+    async fn create_table(database: &Database) -> Result<PgQueryResult, Error> {
+        database.query(format!("CREATE TABLE IF NOT EXISTS {} (
+            id INTEGER PRIMARY KEY,
+            name VARCHAR(10) NOT NULL,
+            color_type VARCHAR(5) NOT NULL,
+            color VARCHAR(11) NOT NULL
+        )", Self::TABLE_NAME).as_str()).await
+    }
 }

@@ -61,15 +61,15 @@ define_record! {
 define_record! {
     RawFahrplanG {
         transport_mode: TransportMode => 3 => 6,
-        origin: u32 => 7 => 14,
-        destination: u32 => 15 => 22,
+        origin_id: u32 => 7 => 14,
+        destination_id: u32 => 15 => 22,
     }
 }
 
 define_record! {
     RawFahrplanA {
-        origin: u32 => 6 => 13,
-        destination: u32 => 14 => 21,
+        origin_id: u32 => 6 => 13,
+        destination_id: u32 => 14 => 21,
         bit_field_number: u32 => 22 => 28,
     }
 }
@@ -77,8 +77,8 @@ define_record! {
 define_record! {
     RawFahrplanL {
         line_number: u32 => 4 => 11,
-        origin: u32 => 12 => 19,
-        destination: u32 => 20 => 27,
+        origin_id: u32 => 12 => 19,
+        destination_id: u32 => 20 => 27,
     }
 }
 
@@ -86,8 +86,8 @@ define_record! {
     RawFahrplanR {
         direction: Direction => 3 => 4,
         direction_number: u32 => 6 => 12,
-        origin: u32 => 13 => 20,
-        destination: u32 => 21 => 28,
+        origin_id: u32 => 13 => 20,
+        destination_id: u32 => 21 => 28,
     }
 }
 
@@ -267,11 +267,11 @@ impl HRDF {
         return Ok(stops);
     }
 
-    pub fn extract_stop_ids(&self, fahrplans: Vec<Fahrplan>) -> Vec<u32> {
+    pub fn extract_stop_ids(&self, fahrplans: &Vec<Fahrplan>) -> Vec<u32> {
         let mut stop_ids: Vec<u32> = Vec::new();
 
         for fahrplan in fahrplans {
-            for stop in fahrplan.stops {
+            for stop in &fahrplan.stops {
                 if !stop_ids.contains(&stop.id) {
                     stop_ids.push(stop.id);
                 }
@@ -281,9 +281,9 @@ impl HRDF {
         return stop_ids;
     }
 
-    pub fn to_trips(&self, fahrplans: Vec<Fahrplan>) -> Vec<Trip> {
+    pub fn to_trips(&self, fahrplans: &Vec<Fahrplan>) -> Vec<Trip> {
         let mut trips: Vec<Trip> = Vec::new();
-        let mut i: u32 = 0;
+        let mut i: u32 = 1;
 
         for fahrplan in fahrplans {
             let trip: Trip = Trip {
@@ -291,8 +291,8 @@ impl HRDF {
                 journey_number: fahrplan.z.journey_number,
                 option_count: fahrplan.z.option_count,
                 transport_mode: fahrplan.g.transport_mode,
-                origin: fahrplan.g.origin,
-                destination: fahrplan.g.destination,
+                origin_id: fahrplan.g.origin_id,
+                destination_id: fahrplan.g.destination_id,
                 bitfield_id: fahrplan.a.bit_field_number,
                 line_id: fahrplan.l.line_number,
                 direction: fahrplan.r.direction,
@@ -307,21 +307,21 @@ impl HRDF {
         return trips;
     }
 
-    pub fn to_trip_stops(&self, fahrplans: Vec<Fahrplan>) -> Vec<TripStop> {
+    pub fn to_trip_stops(&self, fahrplans: &Vec<Fahrplan>) -> Vec<TripStop> {
         let mut trip_stops: Vec<TripStop> = Vec::new();
-        let mut i: u32 = 0;
-        let mut a: u32 = 0;
+        let mut i: u32 = 1;
+        let mut a: u32 = 1;
 
         for fahrplan in fahrplans {
-            let mut j: u8 = 0;
+            let mut j: u8 = 1;
 
-            for stop in fahrplan.stops {
+            for stop in &fahrplan.stops {
                 let trip_stop: TripStop = TripStop {
                     id: a,
                     trip_id: i,
                     sequence: j,
-                    arrival_time: stop.arrival_time,
-                    departure_time: stop.departure_time,
+                    arrival_time: stop.arrival_time.to_owned(),
+                    departure_time: stop.departure_time.to_owned(),
                 };
 
                 trip_stops.push(trip_stop);
@@ -384,7 +384,6 @@ impl HRDF {
                     stops,
                 };
 
-                println!("Found fplan !");
                 fplans.push(fplan);
             }
         }
