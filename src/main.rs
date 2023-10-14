@@ -59,6 +59,9 @@ async fn main() -> std::io::Result<()> {
     let stops: Vec<Stop> = gtfs.get_stops_from_haltestellen(haltestellen, &all_stops);
     println!("{:#?}", stops);*/
 
+    // init database: create tables
+    let _ = Bitfield::create_table(&database).await;
+
     let hrdf: HRDF = HRDF {
         directory: Path::new(&env::var("HRDF_PATH").unwrap().parse::<String>().unwrap()).to_path_buf(),
         agency_id: env::var("AGENCY_ID").unwrap().parse::<String>().unwrap(),
