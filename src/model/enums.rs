@@ -21,7 +21,7 @@ impl FromStr for ColorType {
     }
 }
 
-#[derive(Serialize, Eq, PartialEq, Debug)]
+#[derive(Serialize, Eq, PartialEq, Debug, Clone, Copy)]
 pub enum Direction {
     Outward,
     Return,

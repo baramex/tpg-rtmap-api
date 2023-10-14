@@ -1,7 +1,8 @@
+use async_trait::async_trait;
 use serde::Serialize;
 use sqlx::{FromRow, Error, postgres::PgQueryResult};
 
-use crate::repository::database::Database;
+use crate::repository::database::{Database, Table};
 
 #[derive(Serialize, FromRow, Debug)]
 pub struct Bitfield {
@@ -9,11 +10,26 @@ pub struct Bitfield {
     pub days: String,
 }
 
-impl Bitfield {
-    pub async fn create_table(database: &Database) -> Result<PgQueryResult, Error> {
-        database.query("CREATE TABLE IF NOT EXISTS bitfield (
+#[async_trait]
+impl Table for Bitfield {
+    const TABLE_NAME: &'static str = "bitfields";
+    
+    fn format(&self) -> String {
+        format!(
+            "({},'{}')",
+            self.id,
+            self.days
+        )
+    }
+
+    fn keys() -> String {
+        return "(id,days)".to_string();
+    }
+
+    async fn create_table(database: &Database) -> Result<PgQueryResult, Error> {
+        database.query(format!("CREATE TABLE IF NOT EXISTS {} (
             id INTEGER PRIMARY KEY,
-            days VARCHAR NOT NULL
-        )").await
+            days VARCHAR(100) NOT NULL
+        )", Self::TABLE_NAME).as_str()).await
     }
 }
