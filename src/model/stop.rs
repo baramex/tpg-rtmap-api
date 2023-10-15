@@ -26,6 +26,15 @@ impl Table for  Stop {
         )
     }
 
+    fn values(&self) -> Vec<String> {
+        vec![
+            self.id.to_string(),
+            self.latitude.to_string(),
+            self.longitude.to_string(),
+            self.name.to_string(),
+        ]
+    }
+
     fn keys() -> String {
         return "(id,latitude,longitude,name)".to_string();
     }

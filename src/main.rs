@@ -121,6 +121,8 @@ async fn main() -> std::io::Result<()> {
         println!("Inserting trips...");
         let _t = Database::insert_many::<Trip>(&database, &trips).await;
         println!("Inserted trips");
+
+        println!("{}",_t.unwrap_err());
     }
 
     if insert_trip_stops {

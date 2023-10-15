@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 use serde::Serialize;
-use sqlx::{FromRow, postgres::PgQueryResult, Error};
+use sqlx::{postgres::PgQueryResult, Error, FromRow};
 
 use crate::repository::database::{Database, Table};
 
-use super::{line::TransportMode, enums::Direction};
+use super::{enums::Direction, line::TransportMode};
 
 #[derive(Serialize, FromRow, Debug)]
 pub struct Trip {
@@ -27,7 +27,7 @@ impl Table for Trip {
 
     fn format(&self) -> String {
         format!(
-            "({},{},{},'{:?}',{},{},{},{},'{:?}','{}','{}')",
+            "{},{},{},'{:?}',{},{},{},{},'{:?}','{}','{}'",
             self.id,
             self.journey_number,
             self.option_count,
@@ -42,12 +42,31 @@ impl Table for Trip {
         )
     }
 
+    fn values(&self) -> Vec<String> {
+        vec![
+            self.id.to_string(),
+            self.journey_number.to_string(),
+            self.option_count.to_string(),
+            format!("{:?}", self.transport_mode),
+            self.origin_id.to_string(),
+            self.destination_id.to_string(),
+            self.bitfield_id.to_string(),
+            self.line_id.to_string(),
+            format!("{:?}", self.direction),
+            self.departure_time.to_string(),
+            self.arrival_time.to_string(),
+        ]
+    }
+
     fn keys() -> String {
         return "(id,journey_number,option_count,transport_mode,origin_id,destination_id,bitfield_id,line_id,direction,departure_time,arrival_time)".to_string();
     }
 
     async fn create_table(database: &Database) -> Result<PgQueryResult, Error> {
-        database.query(format!("CREATE TABLE IF NOT EXISTS {} (
+        database
+            .query(
+                format!(
+                    "CREATE TABLE IF NOT EXISTS {} (
             id INTEGER PRIMARY KEY,
             journey_number INTEGER NOT NULL,
             option_count SMALLINT NOT NULL,
@@ -75,6 +94,11 @@ impl Table for Trip {
                 FOREIGN KEY(line_id)
                     REFERENCES lines(id)
                     ON DELETE CASCADE
-        )", Self::TABLE_NAME).as_str()).await
+        )",
+                    Self::TABLE_NAME
+                )
+                .as_str(),
+            )
+            .await
     }
 }

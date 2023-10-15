@@ -22,6 +22,13 @@ impl Table for Bitfield {
         )
     }
 
+    fn values(&self) -> Vec<String> {
+        vec![
+            self.id.to_string(),
+            self.days.to_string(),
+        ]
+    }
+
     fn keys() -> String {
         return "(id,days)".to_string();
     }
