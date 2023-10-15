@@ -28,6 +28,16 @@ impl Table for  TripStop {
         )
     }
 
+    fn values(&self) -> Vec<String> {
+        vec![
+            self.id.to_string(),
+            self.trip_id.to_string(),
+            self.sequence.to_string(),
+            self.arrival_time.to_string(),
+            self.departure_time.to_string(),
+        ]
+    }
+
     fn keys() -> String {
         return "(id,trip_id,sequence,arrival_time,departure_time)".to_string();
     }
@@ -37,8 +47,8 @@ impl Table for  TripStop {
             id INTEGER PRIMARY KEY,
             trip_id INTEGER NOT NULL,
             sequence SMALLINT NOT NULL,
-            arrival_time VARCHAR(5) NOT NULL,
-            departure_time VARCHAR(5) NOT NULL,
+            arrival_time VARCHAR(5),
+            departure_time VARCHAR(5),
             CONSTRAINT fk_trip
                 FOREIGN KEY(trip_id)
                     REFERENCES trips(id)

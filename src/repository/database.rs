@@ -2,8 +2,8 @@ use std::ops::Add;
 
 use async_trait::async_trait;
 use log::error;
-use sqlx::postgres::{PgPool, PgPoolOptions, PgQueryResult, PgRow};
-use sqlx::Error;
+use sqlx::postgres::{PgPool, PgPoolOptions, PgQueryResult, PgRow, PgValue};
+use sqlx::{Error, Value};
 
 #[async_trait]
 pub trait Table {
@@ -12,6 +12,7 @@ pub trait Table {
     async fn create_table(database: &Database) -> Result<PgQueryResult, Error>;
     fn format(&self) -> String;
     fn keys() -> String;
+    fn values(&self) -> Vec<String>; // TODO: change string: support numbers, dates, text etc (database types)
 }
 
 #[derive(Clone)]
@@ -79,20 +80,39 @@ impl Database {
     where
         T: serde::Serialize + Table,
     {
-        let parts: std::slice::Chunks<'_, T> = data.chunks(1000);
+        let parts: std::slice::Chunks<'_, T> = data.chunks(100);
 
         for chunk in parts {
-            let mut params: String = String::new();
+            println!("Chunk size: {}, formatting...", chunk.len());
+
+            let mut i = 1;
+            let mut str: String = String::new();
+            let mut params: Vec<String> = Vec::new();
             for d in chunk {
-                params = params.add(&(d.format() + ","));
+                str = str.add("(");
+                for v in d.values() {
+                    str = str.add(&format!("${},", i));
+                    params.push(v);
+                    i += 1;
+                }
+                str.pop();
+                str = str.add("),");
             }
-            params.pop();
+            str.pop();
 
-            let query: String = format!("INSERT INTO {} {} VALUES {}", T::TABLE_NAME, T::keys(), params);
+            let query: String = format!("INSERT INTO {} {} VALUES {} ON CONFLICT DO NOTHING", T::TABLE_NAME, T::keys(), str);
+            println!("Query: {}", query);
 
-            let final_query = sqlx::query(&query);
-            
+            let mut final_query = sqlx::query(&query);
+
+            println!("Binding params: {}...", params.len());
+            for p in params {
+                final_query = final_query.bind(p);
+            }
+
+            println!("Executing query...");
             final_query.execute(&self.pool).await?;
+            println!("Inserted {} rows", chunk.len());
         }
 
         Ok(PgQueryResult::default())

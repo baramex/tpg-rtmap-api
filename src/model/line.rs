@@ -354,6 +354,15 @@ impl Table for  Line {
         )
     }
 
+    fn values(&self) -> Vec<String> {
+        vec![
+            self.id.to_string(),
+            self.name.to_string(),
+            format!("{:?}", self.color_type),
+            self.color.to_string(),
+        ]
+    }
+
     fn keys() -> String {
         return "(id,name,color_type,color)".to_string();
     }
