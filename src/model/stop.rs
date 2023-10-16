@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use serde::Serialize;
 use sqlx::{FromRow, postgres::PgQueryResult, Error};
 
-use crate::repository::database::{Database, Table};
+use crate::repository::database::{Database, Table, RowData};
 
 #[derive(Serialize, FromRow, Debug)]
 pub struct Stop {
@@ -26,12 +26,12 @@ impl Table for  Stop {
         )
     }
 
-    fn values(&self) -> Vec<String> {
+    fn values(&self) -> Vec<RowData> {
         vec![
-            self.id.to_string(),
-            self.latitude.to_string(),
-            self.longitude.to_string(),
-            self.name.to_string(),
+            self.id,
+            self.latitude,
+            self.longitude,
+            self.name,
         ]
     }
 
