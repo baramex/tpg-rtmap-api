@@ -2,7 +2,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::model::{
     bitfield::Bitfield,
-    enums::{ColorType, Direction},
+    types::{ColorType, Direction, Hour},
     line::{Line, TransportMode},
     stop::Stop,
     trip::Trip, trip_stop::TripStop,
@@ -11,7 +11,7 @@ use std::{
     cmp,
     fs::File,
     io::{BufRead, BufReader, Error, Lines},
-    path::PathBuf,
+    path::PathBuf, str::FromStr,
 };
 
 pub struct HRDF {
@@ -52,48 +52,48 @@ macro_rules! define_record {
 
 define_record! {
     RawFahrplanZ {
-        journey_number: u32 => 3 => 9,
-        agency_id: String => 10 => 16, // TODO: prblm: 81____
-        option_count: u16 => 19 => 22,
+        journey_number: i32 => 3 => 9,
+        agency_id: String => 10 => 16,
+        option_count: i16 => 19 => 22,
     }
 }
 
 define_record! {
     RawFahrplanG {
         transport_mode: TransportMode => 3 => 6,
-        origin_id: u32 => 7 => 14,
-        destination_id: u32 => 15 => 22,
+        origin_id: i32 => 7 => 14,
+        destination_id: i32 => 15 => 22,
     }
 }
 
 define_record! {
     RawFahrplanA {
-        origin_id: u32 => 6 => 13,
-        destination_id: u32 => 14 => 21,
-        bit_field_number: u32 => 22 => 28,
+        origin_id: i32 => 6 => 13,
+        destination_id: i32 => 14 => 21,
+        bit_field_number: i32 => 22 => 28,
     }
 }
 
 define_record! {
     RawFahrplanL {
-        line_number: u32 => 4 => 11,
-        origin_id: u32 => 12 => 19,
-        destination_id: u32 => 20 => 27,
+        line_number: i32 => 4 => 11,
+        origin_id: i32 => 12 => 19,
+        destination_id: i32 => 20 => 27,
     }
 }
 
 define_record! {
     RawFahrplanR {
         direction: Direction => 3 => 4,
-        direction_number: u32 => 6 => 12,
-        origin_id: u32 => 13 => 20,
-        destination_id: u32 => 21 => 28,
+        direction_number: i32 => 6 => 12,
+        origin_id: i32 => 13 => 20,
+        destination_id: i32 => 21 => 28,
     }
 }
 
 define_record! {
     RawFahrplanStop {
-        id: u32 => 0 => 7,
+        id: i32 => 0 => 7,
         name: String => 8 => 28,
         arrival_time: String => 30 => 35,
         departure_time: String => 37 => 42,
@@ -102,35 +102,35 @@ define_record! {
 
 define_record! {
     RawLinieN {
-        number: u32 => 0 => 7,
+        number: i32 => 0 => 7,
         name: String => 12 => 22,
     }
 }
 
 define_record! {
     RawLinieF {
-        number: u32 => 0 => 7,
+        number: i32 => 0 => 7,
         color_type: ColorType => 10 => 21,
     }
 }
 
 define_record! {
     RawLinieB {
-        number: u32 => 0 => 7,
+        number: i32 => 0 => 7,
         color: String => 10 => 21,
     }
 }
 
 define_record! {
     RawBitfeld {
-        number: u32 => 0 => 6,
+        number: i32 => 0 => 6,
         days: String => 7 => 99,
     }
 }
 
 define_record! {
     RawStop {
-        id: u32 => 0 => 7,
+        id: i32 => 0 => 7,
         lat: f64 => 10 => 18,
         lon: f64 => 20 => 29,
         name: String => 39 => 90,
@@ -243,7 +243,7 @@ impl HRDF {
         return Ok(linies);
     }
 
-    pub fn retrieve_stops(&self, ids: Vec<u32>) -> Result<Vec<Stop>, Error> {
+    pub fn retrieve_stops(&self, ids: Vec<i32>) -> Result<Vec<Stop>, Error> {
         let reader: BufReader<File> = self.create_reader("BFKOORD_WGS")?;
         let mut lines: Lines<BufReader<File>> = reader.lines();
 
@@ -267,8 +267,8 @@ impl HRDF {
         return Ok(stops);
     }
 
-    pub fn extract_stop_ids(&self, fahrplans: &Vec<Fahrplan>) -> Vec<u32> {
-        let mut stop_ids: Vec<u32> = Vec::new();
+    pub fn extract_stop_ids(&self, fahrplans: &Vec<Fahrplan>) -> Vec<i32> {
+        let mut stop_ids: Vec<i32> = Vec::new();
 
         for fahrplan in fahrplans {
             for stop in &fahrplan.stops {
@@ -283,7 +283,7 @@ impl HRDF {
 
     pub fn to_trips(&self, fahrplans: &Vec<Fahrplan>) -> Vec<Trip> {
         let mut trips: Vec<Trip> = Vec::new();
-        let mut i: u32 = 1;
+        let mut i: i32 = 1;
 
         for fahrplan in fahrplans {
             let trip: Trip = Trip {
@@ -296,8 +296,8 @@ impl HRDF {
                 bitfield_id: fahrplan.a.bit_field_number,
                 line_id: fahrplan.l.line_number,
                 direction: fahrplan.r.direction,
-                departure_time: fahrplan.stops[0].departure_time.clone(),
-                arrival_time: fahrplan.stops[fahrplan.stops.len() - 1].arrival_time.clone(),
+                departure_time: Hour::from_str(fahrplan.stops[0].departure_time.as_str()).unwrap(),
+                arrival_time: Hour::from_str(fahrplan.stops[fahrplan.stops.len() - 1].arrival_time.as_str()).unwrap(),
             };
 
             trips.push(trip);
@@ -309,19 +309,19 @@ impl HRDF {
 
     pub fn to_trip_stops(&self, fahrplans: &Vec<Fahrplan>) -> Vec<TripStop> {
         let mut trip_stops: Vec<TripStop> = Vec::new();
-        let mut i: u32 = 1;
-        let mut a: u32 = 1;
+        let mut i: i32 = 1;
+        let mut a: i32 = 1;
 
         for fahrplan in fahrplans {
-            let mut j: u8 = 1;
+            let mut j: i8 = 1;
 
             for stop in &fahrplan.stops {
                 let trip_stop: TripStop = TripStop {
                     id: a,
                     trip_id: i,
                     sequence: j,
-                    arrival_time: stop.arrival_time.to_owned(),
-                    departure_time: stop.departure_time.to_owned(),
+                    arrival_time: Hour::from_str(stop.arrival_time.as_str()).unwrap(),
+                    departure_time: Hour::from_str(stop.departure_time.as_str()).unwrap(),
                 };
 
                 trip_stops.push(trip_stop);
