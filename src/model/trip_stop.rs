@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use serde::Serialize;
 use sqlx::{FromRow, postgres::PgQueryResult, Error};
 
-use crate::repository::database::{Database, Table};
+use crate::repository::database::{Database, Table, RowData};
 
 #[derive(Serialize, FromRow, Debug)]
 pub struct TripStop {
@@ -28,13 +28,13 @@ impl Table for  TripStop {
         )
     }
 
-    fn values(&self) -> Vec<String> {
+    fn values(&self) -> Vec<RowData> {
         vec![
-            self.id.to_string(),
-            self.trip_id.to_string(),
-            self.sequence.to_string(),
-            self.arrival_time.to_string(),
-            self.departure_time.to_string(),
+            self.id,
+            self.trip_id,
+            self.sequence,
+            self.arrival_time,
+            self.departure_time,
         ]
     }
 
