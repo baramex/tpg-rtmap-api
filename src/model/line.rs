@@ -4,7 +4,7 @@ use std::str::FromStr;
 use serde::{Deserialize, Deserializer, Serialize};
 use sqlx::{FromRow, postgres::PgQueryResult, Error};
 
-use crate::repository::database::{Database, Table};
+use crate::repository::database::{Database, Table, RowData};
 
 use super::enums::ColorType;
 
@@ -354,12 +354,12 @@ impl Table for  Line {
         )
     }
 
-    fn values(&self) -> Vec<String> {
+    fn values(&self) -> Vec<RowData> {
         vec![
-            self.id.to_string(),
-            self.name.to_string(),
+            self.id,
+            self.name,
             format!("{:?}", self.color_type),
-            self.color.to_string(),
+            self.color,
         ]
     }
 
