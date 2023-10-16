@@ -6,7 +6,7 @@ use sqlx::{FromRow, postgres::PgQueryResult, Error};
 
 use crate::repository::database::{Database, Table};
 
-use super::enums::ColorType;
+use super::types::ColorType;
 
 #[derive(Serialize, Debug, PartialEq, Clone, Copy)]
 pub enum TransportMode {
@@ -334,7 +334,7 @@ impl<'de> Deserialize<'de> for LineDescription {
 
 #[derive(Serialize, FromRow, Debug)]
 pub struct Line {
-    pub id: u32,
+    pub id: i32,
     pub name: String,
     pub color_type: ColorType,
     pub color: String,
@@ -344,22 +344,12 @@ pub struct Line {
 impl Table for  Line {
     const TABLE_NAME: &'static str = "lines";
 
-    fn format(&self) -> String {
-        format!(
-            "({},'{}','{:?}','{}')",
-            self.id,
-            self.name,
-            self.color_type,
-            self.color
-        )
-    }
-
-    fn values(&self) -> Vec<String> {
+    fn values(&self) -> Vec<Box<dyn std::any::Any>> {
         vec![
-            self.id.to_string(),
-            self.name.to_string(),
-            format!("{:?}", self.color_type),
-            self.color.to_string(),
+            Box::new(self.id),
+            Box::new(self.name.to_string()),
+            Box::new(format!("{:?}", self.color_type)),
+            Box::new(self.color.to_string()),
         ]
     }
 

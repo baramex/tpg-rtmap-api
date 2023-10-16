@@ -6,7 +6,7 @@ use crate::repository::database::{Database, Table};
 
 #[derive(Serialize, FromRow, Debug)]
 pub struct Stop {
-    pub id: u32,
+    pub id: i32,
     pub latitude: f64,
     pub longitude: f64,
     pub name: String,
@@ -16,22 +16,12 @@ pub struct Stop {
 impl Table for  Stop {
     const TABLE_NAME: &'static str = "stops";
 
-    fn format(&self) -> String {
-        format!(
-            "({},{},{},'{}')",
-            self.id,
-            self.latitude,
-            self.longitude,
-            self.name.replace("'", "''")
-        )
-    }
-
-    fn values(&self) -> Vec<String> {
+    fn values(&self) -> Vec<Box<dyn std::any::Any>> {
         vec![
-            self.id.to_string(),
-            self.latitude.to_string(),
-            self.longitude.to_string(),
-            self.name.to_string(),
+            Box::new(self.id),
+            Box::new(self.latitude),
+            Box::new(self.longitude),
+            Box::new(self.name.to_string()),
         ]
     }
 

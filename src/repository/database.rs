@@ -1,18 +1,18 @@
+use std::any::TypeId;
 use std::ops::Add;
 
 use async_trait::async_trait;
 use log::error;
-use sqlx::postgres::{PgPool, PgPoolOptions, PgQueryResult, PgRow, PgValue};
-use sqlx::{Error, Value};
+use sqlx::postgres::{PgPool, PgPoolOptions, PgQueryResult, PgRow};
+use sqlx::Error;
 
 #[async_trait]
 pub trait Table {
     const TABLE_NAME: &'static str;
 
     async fn create_table(database: &Database) -> Result<PgQueryResult, Error>;
-    fn format(&self) -> String;
     fn keys() -> String;
-    fn values(&self) -> Vec<String>; // TODO: change string: support numbers, dates, text etc (database types)
+    fn values(&self) -> Vec<Box<dyn std::any::Any>>;
 }
 
 #[derive(Clone)]
@@ -65,17 +65,6 @@ impl Database {
         };
     }
 
-    pub async fn insert_one<T>(&self, data: T) -> Result<PgQueryResult, Error>
-    where
-        T: serde::Serialize + Table,
-    {
-        let query = format!("INSERT INTO {} {} VALUES {}", T::TABLE_NAME, T::keys(), data.format());
-
-        let final_query = sqlx::query(&query);
-
-        return final_query.execute(&self.pool).await;
-    }
-
     pub async fn insert_many<T>(&self, data: &Vec<T>) -> Result<PgQueryResult, Error>
     where
         T: serde::Serialize + Table,
@@ -87,7 +76,7 @@ impl Database {
 
             let mut i = 1;
             let mut str: String = String::new();
-            let mut params: Vec<String> = Vec::new();
+            let mut params: Vec<Box<dyn std::any::Any>> = Vec::new();
             for d in chunk {
                 str = str.add("(");
                 for v in d.values() {
@@ -106,8 +95,27 @@ impl Database {
             let mut final_query = sqlx::query(&query);
 
             println!("Binding params: {}...", params.len());
-            for p in params {
-                final_query = final_query.bind(p);
+            for value in params {
+                if TypeId::of::<i32>() == value.type_id() {
+                    let n: i32 = *value.downcast::<i32>().unwrap();
+                    final_query = final_query.bind(n);
+                }
+                else if TypeId::of::<i16>() == value.type_id() {
+                    let n: i16 = *value.downcast::<i16>().unwrap();
+                    final_query = final_query.bind(n);
+                }
+                else if TypeId::of::<i8>() == value.type_id() {
+                    let n: i8 = *value.downcast::<i8>().unwrap();
+                    final_query = final_query.bind(n);
+                }
+                else if TypeId::of::<f64>() == value.type_id() {
+                    let n: f64 = *value.downcast::<f64>().unwrap();
+                    final_query = final_query.bind(n);
+                }
+                else if TypeId::of::<String>() == value.type_id() {
+                    let n: String = *value.downcast::<String>().unwrap();
+                    final_query = final_query.bind(n);
+                }
             }
 
             println!("Executing query...");

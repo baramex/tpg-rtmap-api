@@ -104,7 +104,7 @@ async fn main() -> std::io::Result<()> {
 
     if insert_stops {
         println!("Getting stops...");
-        let stops_id: Vec<u32> = hrdf.extract_stop_ids(&fahrplans);
+        let stops_id: Vec<i32> = hrdf.extract_stop_ids(&fahrplans);
         let stops: Vec<Stop> = hrdf.retrieve_stops(stops_id).unwrap();
         println!("Got stops: {}", stops.len());
 

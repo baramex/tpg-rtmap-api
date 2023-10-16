@@ -6,26 +6,18 @@ use crate::repository::database::{Database, Table};
 
 #[derive(Serialize, FromRow, Debug)]
 pub struct Bitfield {
-    pub id: u32,
+    pub id: i32,
     pub days: String,
 }
 
 #[async_trait]
 impl Table for Bitfield {
     const TABLE_NAME: &'static str = "bitfields";
-    
-    fn format(&self) -> String {
-        format!(
-            "({},'{}')",
-            self.id,
-            self.days
-        )
-    }
 
-    fn values(&self) -> Vec<String> {
+    fn values(&self) -> Vec<Box<dyn std::any::Any>> {
         vec![
-            self.id.to_string(),
-            self.days.to_string(),
+            Box::new(self.id),
+            Box::new(self.days.to_string()),
         ]
     }
 
