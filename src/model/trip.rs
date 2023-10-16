@@ -2,59 +2,42 @@ use async_trait::async_trait;
 use serde::Serialize;
 use sqlx::{postgres::PgQueryResult, Error, FromRow};
 
-use crate::repository::database::{Database, Table, RowData};
+use crate::repository::database::{Database, Table};
 
-use super::{enums::Direction, line::TransportMode};
+use super::{types::{Direction, Hour}, line::TransportMode};
 
 #[derive(Serialize, FromRow, Debug)]
 pub struct Trip {
-    pub id: u32,
-    pub journey_number: u32,
-    pub option_count: u16,
+    pub id: i32,
+    pub journey_number: i32,
+    pub option_count: i16,
     pub transport_mode: TransportMode,
-    pub origin_id: u32,
-    pub destination_id: u32,
-    pub bitfield_id: u32,
-    pub line_id: u32,
+    pub origin_id: i32,
+    pub destination_id: i32,
+    pub bitfield_id: i32,
+    pub line_id: i32,
     pub direction: Direction,
-    pub departure_time: String,
-    pub arrival_time: String,
+    pub departure_time: Hour,
+    pub arrival_time: Hour,
 }
 
 #[async_trait]
 impl Table for Trip {
     const TABLE_NAME: &'static str = "trips";
 
-    fn format(&self) -> String {
-        format!(
-            "{},{},{},'{:?}',{},{},{},{},'{:?}','{}','{}'",
-            self.id,
-            self.journey_number,
-            self.option_count,
-            self.transport_mode,
-            self.origin_id,
-            self.destination_id,
-            self.bitfield_id,
-            self.line_id,
-            self.direction,
-            self.departure_time,
-            self.arrival_time
-        )
-    }
-
-    fn values(&self) -> Vec<RowData> {
+    fn values(&self) -> Vec<Box<dyn std::any::Any>> {
         vec![
-            self.id,
-            self.journey_number,
-            self.option_count,
-            format!("{:?}", self.transport_mode),
-            self.origin_id,
-            self.destination_id,
-            self.bitfield_id,
-            self.line_id,
-            format!("{:?}", self.direction),
-            self.departure_time,
-            self.arrival_time,
+            Box::new(self.id),
+            Box::new(self.journey_number),
+            Box::new(self.option_count),
+            Box::new(format!("{:?}", self.transport_mode)),
+            Box::new(self.origin_id),
+            Box::new(self.destination_id),
+            Box::new(self.bitfield_id),
+            Box::new(self.line_id),
+            Box::new(format!("{:?}", self.direction)),
+            Box::new(self.departure_time.value()),
+            Box::new(self.arrival_time.value()),
         ]
     }
 

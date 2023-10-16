@@ -2,6 +2,44 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Deserializer, Serialize};
 
+#[derive(Debug)]
+pub struct Hour {
+    pub hour: i16,
+    pub minute: i16,
+}
+
+impl Hour {
+    pub fn value(&self) -> i16 {
+        self.hour * 60 + self.minute
+    }
+
+    pub fn from_value(value: i16) -> Self {
+        Self {
+            hour: value / 60,
+            minute: value % 60,
+        }
+    }
+}
+
+impl FromStr for Hour {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let hour: i16 = s[1..3].parse().unwrap();
+        let minute: i16 = s[3..5].parse().unwrap();
+        Ok(Self { hour, minute })
+    }
+}
+
+impl Serialize for Hour {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer
+    {
+        serializer.serialize_i16(self.value())
+    }
+}
+
 #[derive(Serialize, Debug)]
 pub enum ColorType {
     Dark,

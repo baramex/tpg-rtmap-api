@@ -2,39 +2,30 @@ use async_trait::async_trait;
 use serde::Serialize;
 use sqlx::{FromRow, postgres::PgQueryResult, Error};
 
-use crate::repository::database::{Database, Table, RowData};
+use crate::repository::database::{Database, Table};
+
+use super::types::Hour;
 
 #[derive(Serialize, FromRow, Debug)]
 pub struct TripStop {
-    pub id: u32,
-    pub trip_id: u32,
-    pub sequence: u8,
-    pub arrival_time: String,
-    pub departure_time: String,
+    pub id: i32,
+    pub trip_id: i32,
+    pub sequence: i8,
+    pub arrival_time: Hour,
+    pub departure_time: Hour,
 }
 
 #[async_trait]
 impl Table for  TripStop {
     const TABLE_NAME: &'static str = "trip_stops";
 
-    fn format(&self) -> String {
-        format!(
-            "({},{},{},'{}','{}')",
-            self.id,
-            self.trip_id,
-            self.sequence,
-            self.arrival_time,
-            self.departure_time
-        )
-    }
-
-    fn values(&self) -> Vec<RowData> {
+    fn values(&self) -> Vec<Box<dyn std::any::Any>> {
         vec![
-            self.id,
-            self.trip_id,
-            self.sequence,
-            self.arrival_time,
-            self.departure_time,
+            Box::new(self.id),
+            Box::new(self.trip_id),
+            Box::new(self.sequence),
+            Box::new(self.arrival_time.value()),
+            Box::new(self.departure_time.value()),
         ]
     }
 
