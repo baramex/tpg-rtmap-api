@@ -17,6 +17,7 @@ pub trait Table {
 
 pub enum RowData {
     String,
+    u8,
     u16,
     u32,
     f64
