@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use serde::Serialize;
 use sqlx::{FromRow, Error, postgres::PgQueryResult};
 
-use crate::repository::database::{Database, Table};
+use crate::repository::database::{Database, Table, RowData};
 
 #[derive(Serialize, FromRow, Debug)]
 pub struct Bitfield {
@@ -22,10 +22,10 @@ impl Table for Bitfield {
         )
     }
 
-    fn values(&self) -> Vec<String> {
+    fn values(&self) -> Vec<RowData> {
         vec![
-            self.id.to_string(),
-            self.days.to_string(),
+            self.id,
+            self.days,
         ]
     }
 
