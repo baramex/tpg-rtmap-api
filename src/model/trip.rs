@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use serde::Serialize;
 use sqlx::{postgres::PgQueryResult, Error, FromRow};
 
-use crate::repository::database::{Database, Table};
+use crate::repository::database::{Database, Table, RowData};
 
 use super::{enums::Direction, line::TransportMode};
 
@@ -42,19 +42,19 @@ impl Table for Trip {
         )
     }
 
-    fn values(&self) -> Vec<String> {
+    fn values(&self) -> Vec<RowData> {
         vec![
-            self.id.to_string(),
-            self.journey_number.to_string(),
-            self.option_count.to_string(),
+            self.id,
+            self.journey_number,
+            self.option_count,
             format!("{:?}", self.transport_mode),
-            self.origin_id.to_string(),
-            self.destination_id.to_string(),
-            self.bitfield_id.to_string(),
-            self.line_id.to_string(),
+            self.origin_id,
+            self.destination_id,
+            self.bitfield_id,
+            self.line_id,
             format!("{:?}", self.direction),
-            self.departure_time.to_string(),
-            self.arrival_time.to_string(),
+            self.departure_time,
+            self.arrival_time,
         ]
     }
 
