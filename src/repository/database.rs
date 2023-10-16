@@ -12,7 +12,14 @@ pub trait Table {
     async fn create_table(database: &Database) -> Result<PgQueryResult, Error>;
     fn format(&self) -> String;
     fn keys() -> String;
-    fn values(&self) -> Vec<String>; // TODO: change string: support numbers, dates, text etc (database types)
+    fn values(&self) -> Vec<RowData>; // TODO: change string: support numbers, dates, text etc (database types)
+}
+
+pub enum RowData {
+    String,
+    u16,
+    u32,
+    f64
 }
 
 #[derive(Clone)]
