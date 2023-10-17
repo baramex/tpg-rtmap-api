@@ -1,9 +1,10 @@
 use std::any::TypeId;
 use std::ops::Add;
+use std::time::SystemTime;
 
 use async_trait::async_trait;
 use log::error;
-use sqlx::postgres::{PgPool, PgPoolOptions, PgQueryResult, PgRow};
+use sqlx::postgres::{PgPool, PgPoolOptions, PgQueryResult, PgRow, PgConnectOptions};
 use sqlx::Error;
 
 #[async_trait]
@@ -21,9 +22,9 @@ pub struct Database {
 }
 
 impl Database {
-    pub async fn init(config: PgPoolOptions, url: &str) -> Result<Database, Error> {
+    pub async fn init(config: PgPoolOptions, connect_options: PgConnectOptions) -> Result<Database, Error> {
         Ok(Database {
-            pool: config.connect(url).await?,
+            pool: config.connect_with(connect_options).await?,
         })
     }
 
@@ -69,9 +70,20 @@ impl Database {
     where
         T: serde::Serialize + Table,
     {
-        let parts: std::slice::Chunks<'_, T> = data.chunks(100);
+        /*
+        46s -> 1000
+        16s -> 500
+        700ms -> 100
+        200ms -> 50
+        65ms -> 25
+        17ms -> 10 <-- best
+        9ms -> 5
+        4ms -> 1
+        */
+        let parts: std::slice::Chunks<'_, T> = data.chunks(10);
 
         for chunk in parts {
+            let start: SystemTime = SystemTime::now();
             println!("Chunk size: {}, formatting...", chunk.len());
 
             let mut i = 1;
@@ -89,8 +101,12 @@ impl Database {
             }
             str.pop();
 
-            let query: String = format!("INSERT INTO {} {} VALUES {} ON CONFLICT DO NOTHING", T::TABLE_NAME, T::keys(), str);
-            println!("Query: {}", query);
+            let query: String = format!(
+                "INSERT INTO {} {} VALUES {} ON CONFLICT DO NOTHING",
+                T::TABLE_NAME,
+                T::keys(),
+                str
+            );
 
             let mut final_query = sqlx::query(&query);
 
@@ -98,29 +114,34 @@ impl Database {
             for value in params {
                 if TypeId::of::<i32>() == value.type_id() {
                     let n: i32 = *value.downcast::<i32>().unwrap();
+                    println!("Binding i32: {}", n);
                     final_query = final_query.bind(n);
-                }
-                else if TypeId::of::<i16>() == value.type_id() {
+                } else if TypeId::of::<i16>() == value.type_id() {
                     let n: i16 = *value.downcast::<i16>().unwrap();
+                    println!("Binding i16: {}", n);
                     final_query = final_query.bind(n);
-                }
-                else if TypeId::of::<i8>() == value.type_id() {
+                } else if TypeId::of::<i8>() == value.type_id() {
                     let n: i8 = *value.downcast::<i8>().unwrap();
+                    println!("Binding i8: {}", n);
                     final_query = final_query.bind(n);
-                }
-                else if TypeId::of::<f64>() == value.type_id() {
+                } else if TypeId::of::<f64>() == value.type_id() {
                     let n: f64 = *value.downcast::<f64>().unwrap();
+                    println!("Binding f64: {}", n);
                     final_query = final_query.bind(n);
-                }
-                else if TypeId::of::<String>() == value.type_id() {
+                } else if TypeId::of::<String>() == value.type_id() {
                     let n: String = *value.downcast::<String>().unwrap();
+                    println!("Binding String: {}", n);
                     final_query = final_query.bind(n);
                 }
             }
 
             println!("Executing query...");
             final_query.execute(&self.pool).await?;
-            println!("Inserted {} rows", chunk.len());
+            println!(
+                "Inserted {} rows in {} ms",
+                chunk.len(),
+                start.elapsed().unwrap().as_millis()
+            );
         }
 
         Ok(PgQueryResult::default())

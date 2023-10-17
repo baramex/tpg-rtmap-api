@@ -59,8 +59,8 @@ impl Table for Trip {
             bitfield_id INTEGER NOT NULL,
             line_id INTEGER NOT NULL,
             direction VARCHAR(7) NOT NULL,
-            departure_time VARCHAR(5) NOT NULL,
-            arrival_time VARCHAR(5) NOT NULL,
+            departure_time SMALLINT NOT NULL,
+            arrival_time SMALLINT NOT NULL,
             CONSTRAINT fk_origin
                 FOREIGN KEY(origin_id)
                     REFERENCES stops(id)

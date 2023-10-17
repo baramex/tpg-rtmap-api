@@ -4,7 +4,7 @@ mod repository;
 
 use crate::repository::database::Table;
 
-use std::{env, path::Path};
+use std::{env, path::Path, str::FromStr};
 
 //use api::line::get_line;
 
@@ -15,7 +15,7 @@ use repository::{
     database::Database,
     hrdf::{Fahrplan, HRDF},
 };
-use sqlx::postgres::PgPoolOptions;
+use sqlx::{postgres::{PgPoolOptions, PgConnectOptions}, ConnectOptions};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -28,7 +28,7 @@ async fn main() -> std::io::Result<()> {
     // init database
     let database: Database = Database::init(
         PgPoolOptions::new(),
-        env::var("DATABASE_URL").unwrap().as_str(),
+        PgConnectOptions::from_str(env::var("DATABASE_URL").unwrap().as_str()).unwrap().disable_statement_logging()
     )
     .await
     .unwrap();
