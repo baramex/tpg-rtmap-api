@@ -1,6 +1,5 @@
 use std::any::TypeId;
 use std::ops::Add;
-use std::time::SystemTime;
 
 use async_trait::async_trait;
 use log::error;
@@ -73,8 +72,6 @@ impl Database {
         let parts: std::slice::Chunks<'_, T> = data.chunks(10);
 
         for chunk in parts {
-            let start: SystemTime = SystemTime::now();
-
             let mut i = 1;
             let mut str: String = String::new();
             let mut params: Vec<Box<dyn std::any::Any>> = Vec::new();

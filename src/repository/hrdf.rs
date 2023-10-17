@@ -70,8 +70,8 @@ define_record! {
 
 define_record! {
     RawFahrplanA {
-        origin_id: i32 => 6 => 13,
-        destination_id: i32 => 14 => 21,
+        _origin_id: i32 => 6 => 13,
+        _destination_id: i32 => 14 => 21,
         bit_field_number: i32 => 22 => 28,
     }
 }
@@ -79,24 +79,24 @@ define_record! {
 define_record! {
     RawFahrplanL {
         line_number: i32 => 4 => 11,
-        origin_id: i32 => 12 => 19,
-        destination_id: i32 => 20 => 27,
+        _origin_id: i32 => 12 => 19,
+        _destination_id: i32 => 20 => 27,
     }
 }
 
 define_record! {
     RawFahrplanR {
         direction: Direction => 3 => 4,
-        direction_number: i32 => 6 => 12,
-        origin_id: i32 => 13 => 20,
-        destination_id: i32 => 21 => 28,
+        _direction_number: i32 => 6 => 12,
+        _origin_id: i32 => 13 => 20,
+        _destination_id: i32 => 21 => 28,
     }
 }
 
 define_record! {
     RawFahrplanStop {
         id: i32 => 0 => 7,
-        name: String => 8 => 28,
+        _name: String => 8 => 28,
         arrival_time: String => 30 => 35,
         departure_time: String => 37 => 42,
     }
@@ -111,14 +111,14 @@ define_record! {
 
 define_record! {
     RawLinieF {
-        number: i32 => 0 => 7,
+        _number: i32 => 0 => 7,
         color_type: ColorType => 10 => 21,
     }
 }
 
 define_record! {
     RawLinieB {
-        number: i32 => 0 => 7,
+        _number: i32 => 0 => 7,
         color: String => 10 => 21,
     }
 }
