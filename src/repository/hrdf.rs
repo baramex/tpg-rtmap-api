@@ -2,16 +2,18 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::model::{
     bitfield::Bitfield,
-    types::{ColorType, Direction, Hour},
     line::{Line, TransportMode},
     stop::Stop,
-    trip::Trip, trip_stop::TripStop,
+    trip::Trip,
+    trip_stop::TripStop,
+    types::{ColorType, Direction, Hour},
 };
 use std::{
     cmp,
     fs::File,
     io::{BufRead, BufReader, Error, Lines},
-    path::PathBuf, str::FromStr,
+    path::PathBuf,
+    str::FromStr,
 };
 
 pub struct HRDF {
@@ -225,15 +227,19 @@ impl HRDF {
                     }
                 }
 
-                if line_f.is_none() || line_b.is_none() {
-                    continue;
-                }
-
                 let linie: Line = Line {
                     id: line_n.number,
                     name: line_n.name,
-                    color_type: line_f.unwrap().color_type,
-                    color: line_b.unwrap().color,
+                    color_type: if line_f.is_none() {
+                        ColorType::Unknown
+                    } else {
+                        line_f.unwrap().color_type
+                    },
+                    color: if line_b.is_none() {
+                        String::new()
+                    } else {
+                        line_b.unwrap().color
+                    },
                 };
 
                 linies.push(linie);
@@ -297,7 +303,12 @@ impl HRDF {
                 line_id: fahrplan.l.line_number,
                 direction: fahrplan.r.direction,
                 departure_time: Hour::from_str(fahrplan.stops[0].departure_time.as_str()).unwrap(),
-                arrival_time: Hour::from_str(fahrplan.stops[fahrplan.stops.len() - 1].arrival_time.as_str()).unwrap(),
+                arrival_time: Hour::from_str(
+                    fahrplan.stops[fahrplan.stops.len() - 1]
+                        .arrival_time
+                        .as_str(),
+                )
+                .unwrap(),
             };
 
             trips.push(trip);
@@ -320,8 +331,8 @@ impl HRDF {
                     id: a,
                     trip_id: i,
                     sequence: j,
-                    arrival_time: Hour::from_str(stop.arrival_time.as_str()).unwrap(),
-                    departure_time: Hour::from_str(stop.departure_time.as_str()).unwrap(),
+                    arrival_time: if stop.arrival_time.is_empty() { None } else { Some(Hour::from_str(stop.arrival_time.as_str()).unwrap()) },
+                    departure_time: if stop.departure_time.is_empty() { None } else { Some(Hour::from_str(stop.departure_time.as_str()).unwrap()) },
                 };
 
                 trip_stops.push(trip_stop);

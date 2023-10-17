@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use std::str::FromStr;
 
 use serde::{Deserialize, Deserializer, Serialize};
-use sqlx::{FromRow, postgres::PgQueryResult, Error};
+use sqlx::{postgres::PgQueryResult, Error, FromRow};
 
 use crate::repository::database::{Database, Table};
 
@@ -341,14 +341,18 @@ pub struct Line {
 }
 
 #[async_trait]
-impl Table for  Line {
+impl Table for Line {
     const TABLE_NAME: &'static str = "lines";
 
     fn values(&self) -> Vec<Box<dyn std::any::Any>> {
         vec![
             Box::new(self.id),
             Box::new(self.name.to_string()),
-            Box::new(format!("{:?}", self.color_type)),
+            Box::new(if self.color_type == ColorType::Unknown {
+                String::new()
+            } else {
+                format!("{:?}", self.color_type)
+            }),
             Box::new(self.color.to_string()),
         ]
     }
@@ -358,11 +362,19 @@ impl Table for  Line {
     }
 
     async fn create_table(database: &Database) -> Result<PgQueryResult, Error> {
-        database.query(format!("CREATE TABLE IF NOT EXISTS {} (
+        database
+            .query(
+                format!(
+                    "CREATE TABLE IF NOT EXISTS {} (
             id INTEGER PRIMARY KEY,
             name VARCHAR(10) NOT NULL,
-            color_type VARCHAR(5) NOT NULL,
-            color VARCHAR(11) NOT NULL
-        )", Self::TABLE_NAME).as_str()).await
+            color_type VARCHAR(5),
+            color VARCHAR(11)
+        )",
+                    Self::TABLE_NAME
+                )
+                .as_str(),
+            )
+            .await
     }
 }

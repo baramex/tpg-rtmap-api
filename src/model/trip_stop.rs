@@ -11,8 +11,8 @@ pub struct TripStop {
     pub id: i32,
     pub trip_id: i32,
     pub sequence: i8,
-    pub arrival_time: Hour,
-    pub departure_time: Hour,
+    pub arrival_time: Option<Hour>,
+    pub departure_time: Option<Hour>,
 }
 
 #[async_trait]
@@ -24,8 +24,8 @@ impl Table for  TripStop {
             Box::new(self.id),
             Box::new(self.trip_id),
             Box::new(self.sequence),
-            Box::new(self.arrival_time.value()),
-            Box::new(self.departure_time.value()),
+            Box::new(if self.arrival_time.is_some() { self.arrival_time.as_ref().unwrap().value() } else { 0 }),
+            Box::new(if self.departure_time.is_some() { self.departure_time.as_ref().unwrap().value() } else { 0 }),
         ]
     }
 
@@ -38,8 +38,8 @@ impl Table for  TripStop {
             id INTEGER PRIMARY KEY,
             trip_id INTEGER NOT NULL,
             sequence SMALLINT NOT NULL,
-            arrival_time VARCHAR(5),
-            departure_time VARCHAR(5),
+            arrival_time SMALLINT,
+            departure_time SMALLINT,
             CONSTRAINT fk_trip
                 FOREIGN KEY(trip_id)
                     REFERENCES trips(id)

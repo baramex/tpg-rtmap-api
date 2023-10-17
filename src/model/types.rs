@@ -40,10 +40,11 @@ impl Serialize for Hour {
     }
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, PartialEq)]
 pub enum ColorType {
     Dark,
-    Light
+    Light,
+    Unknown
 }
 
 impl FromStr for ColorType {
@@ -53,7 +54,7 @@ impl FromStr for ColorType {
         let t: Self = match s {
             "255 255 255" => Self::Light,
             "000 000 000" => Self::Dark,
-            _ => panic!("Unknown color type: {}", s),
+            _ => Self::Unknown,
         };
         Ok(t)
     }
