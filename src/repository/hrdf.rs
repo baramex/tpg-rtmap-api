@@ -324,7 +324,7 @@ impl HRDF {
         let mut a: i32 = 1;
 
         for fahrplan in fahrplans {
-            let mut j: i8 = 1;
+            let mut j: i16 = 1;
 
             for stop in &fahrplan.stops {
                 let trip_stop: TripStop = TripStop {

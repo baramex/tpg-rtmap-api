@@ -70,21 +70,10 @@ impl Database {
     where
         T: serde::Serialize + Table,
     {
-        /*
-        46s -> 1000
-        16s -> 500
-        700ms -> 100
-        200ms -> 50
-        65ms -> 25
-        17ms -> 10 <-- best
-        9ms -> 5
-        4ms -> 1
-        */
         let parts: std::slice::Chunks<'_, T> = data.chunks(10);
 
         for chunk in parts {
             let start: SystemTime = SystemTime::now();
-            println!("Chunk size: {}, formatting...", chunk.len());
 
             let mut i = 1;
             let mut str: String = String::new();
@@ -110,38 +99,23 @@ impl Database {
 
             let mut final_query = sqlx::query(&query);
 
-            println!("Binding params: {}...", params.len());
             for value in params {
                 if TypeId::of::<i32>() == value.type_id() {
                     let n: i32 = *value.downcast::<i32>().unwrap();
-                    println!("Binding i32: {}", n);
                     final_query = final_query.bind(n);
                 } else if TypeId::of::<i16>() == value.type_id() {
                     let n: i16 = *value.downcast::<i16>().unwrap();
-                    println!("Binding i16: {}", n);
-                    final_query = final_query.bind(n);
-                } else if TypeId::of::<i8>() == value.type_id() {
-                    let n: i8 = *value.downcast::<i8>().unwrap();
-                    println!("Binding i8: {}", n);
                     final_query = final_query.bind(n);
                 } else if TypeId::of::<f64>() == value.type_id() {
                     let n: f64 = *value.downcast::<f64>().unwrap();
-                    println!("Binding f64: {}", n);
                     final_query = final_query.bind(n);
                 } else if TypeId::of::<String>() == value.type_id() {
                     let n: String = *value.downcast::<String>().unwrap();
-                    println!("Binding String: {}", n);
                     final_query = final_query.bind(n);
                 }
             }
 
-            println!("Executing query...");
             final_query.execute(&self.pool).await?;
-            println!(
-                "Inserted {} rows in {} ms",
-                chunk.len(),
-                start.elapsed().unwrap().as_millis()
-            );
         }
 
         Ok(PgQueryResult::default())

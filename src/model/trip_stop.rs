@@ -10,7 +10,7 @@ use super::types::Hour;
 pub struct TripStop {
     pub id: i32,
     pub trip_id: i32,
-    pub sequence: i8,
+    pub sequence: i16,
     pub arrival_time: Option<Hour>,
     pub departure_time: Option<Hour>,
 }
