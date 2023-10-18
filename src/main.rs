@@ -6,7 +6,7 @@ use crate::repository::database::Table;
 
 use std::{env, path::Path, str::FromStr};
 
-//use api::line::get_line;
+use api::{line::get_line, stop::get_stop};
 
 use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 use dotenv::dotenv;
@@ -72,7 +72,7 @@ async fn main() -> std::io::Result<()> {
     let insert_lines = false;
     let insert_stops = false;
     let insert_trips = false;
-    let insert_trip_stops = true;
+    let insert_trip_stops = false;
 
     let mut fahrplans: Vec<Fahrplan> = Vec::new();
 
@@ -137,7 +137,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         let db_data: Data<Database> = Data::new(database.clone());
         let logger: Logger = Logger::default();
-        App::new().app_data(db_data).wrap(logger) //.service(get_line)
+        App::new().app_data(db_data).wrap(logger).service(get_line).service(get_stop)
     })
     .bind(("127.0.0.1", 10000))?
     .run()

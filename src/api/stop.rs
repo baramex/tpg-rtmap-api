@@ -11,22 +11,22 @@ use derive_more::Display;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    model::line::Line,
+    model::stop::Stop,
     repository::database::{Database, Table},
 };
 
 #[derive(Deserialize, Serialize)]
-pub struct LineIdentifier {
+pub struct StopIdentifier {
     id: String,
 }
 
 #[derive(Debug, Display)]
-pub enum LineError {
-    LineNotFound,
-    BadLineRequest,
+pub enum StopError {
+    StopNotFound,
+    BadStopRequest,
 }
 
-impl ResponseError for LineError {
+impl ResponseError for StopError {
     fn error_response(&self) -> HttpResponse<actix_web::body::BoxBody> {
         HttpResponse::build(self.status_code())
             .insert_header(ContentType::json())
@@ -35,30 +35,30 @@ impl ResponseError for LineError {
 
     fn status_code(&self) -> StatusCode {
         match self {
-            LineError::LineNotFound => StatusCode::NOT_FOUND,
-            LineError::BadLineRequest => StatusCode::BAD_REQUEST,
+            StopError::StopNotFound => StatusCode::NOT_FOUND,
+            StopError::BadStopRequest => StatusCode::BAD_REQUEST,
         }
     }
 }
 
-#[get("/line/{id}")]
-pub async fn get_line(
-    identifier: Path<LineIdentifier>,
+#[get("/stop/{id}")]
+pub async fn get_stop(
+    identifier: Path<StopIdentifier>,
     database: Data<Database>,
-) -> Result<Json<Line>, LineError> {
+) -> Result<Json<Stop>, StopError> {
     let id: Result<i32, std::num::ParseIntError> = identifier.into_inner().id.parse::<i32>();
     if id.is_err() {
-        return Err(LineError::BadLineRequest);
+        return Err(StopError::BadStopRequest);
     }
 
-    let line: Option<Line> = database
-        .get_one::<Line>(
-            sqlx::query_as::<_, Line>(format!("SELECT * FROM {} WHERE id=$1", Line::TABLE_NAME).as_str()).bind(id.unwrap())
+    let stop: Option<Stop> = database
+        .get_one::<Stop>(
+            sqlx::query_as::<_, Stop>(format!("SELECT * FROM {} WHERE id=$1", Stop::TABLE_NAME).as_str()).bind(id.unwrap())
         )
         .await;
 
-    match line {
-        Some(line) => Ok(Json(line)),
-        None => Err(LineError::LineNotFound),
+    match stop {
+        Some(stop) => Ok(Json(stop)),
+        None => Err(StopError::StopNotFound),
     }
 }

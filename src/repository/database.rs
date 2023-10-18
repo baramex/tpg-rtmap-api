@@ -3,8 +3,9 @@ use std::ops::Add;
 
 use async_trait::async_trait;
 use log::error;
-use sqlx::postgres::{PgPool, PgPoolOptions, PgQueryResult, PgRow, PgConnectOptions};
-use sqlx::Error;
+use sqlx::postgres::{PgPool, PgPoolOptions, PgQueryResult, PgRow, PgConnectOptions, PgArguments};
+use sqlx::{Error, Postgres};
+use sqlx::query::QueryAs;
 
 #[async_trait]
 pub trait Table {
@@ -31,12 +32,11 @@ impl Database {
         return sqlx::query(query).execute(&self.pool).await;
     }
 
-    pub async fn get<T>(&self, query: &str) -> Option<Vec<T>>
+    pub async fn get<T>(&self, query: QueryAs<'_, Postgres, T, PgArguments>) -> Option<Vec<T>>
     where
         T: for<'r> sqlx::FromRow<'r, PgRow> + Send + Unpin,
     {
-        let final_query = sqlx::query_as::<_, T>(query);
-        let res: Result<Vec<T>, Error> = final_query.fetch_all(&self.pool).await;
+        let res: Result<Vec<T>, Error> = query.fetch_all(&self.pool).await;
 
         return match res {
             Ok(output) => match output.len() {
@@ -50,7 +50,7 @@ impl Database {
         };
     }
 
-    pub async fn get_one<T>(&self, query: &str) -> Option<T>
+    pub async fn get_one<T>(&self, query: QueryAs<'_, Postgres, T, PgArguments>) -> Option<T>
     where
         T: for<'r> sqlx::FromRow<'r, PgRow> + Send + Unpin,
     {

@@ -336,6 +336,7 @@ impl<'de> Deserialize<'de> for LineDescription {
 pub struct Line {
     pub id: i32,
     pub name: String,
+    #[sqlx(try_from = "String")]
     pub color_type: ColorType,
     pub color: String,
 }
