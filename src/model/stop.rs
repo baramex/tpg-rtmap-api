@@ -32,8 +32,8 @@ impl Table for  Stop {
     async fn create_table(database: &Database) -> Result<PgQueryResult, Error> {
         database.query(format!("CREATE TABLE IF NOT EXISTS {} (
             id INTEGER PRIMARY KEY,
-            latitude REAL NOT NULL,
-            longitude REAL NOT NULL,
+            latitude DOUBLE PRECISION NOT NULL,
+            longitude DOUBLE PRECISION NOT NULL,
             name VARCHAR(60) NOT NULL
         )", Self::TABLE_NAME).as_str()).await
     }
