@@ -329,6 +329,7 @@ impl HRDF {
             for stop in &fahrplan.stops {
                 let trip_stop: TripStop = TripStop {
                     id: a,
+                    stop_id: stop.id,
                     trip_id: i,
                     sequence: j,
                     arrival_time: if stop.arrival_time.is_empty() { None } else { Some(Hour::from_str(stop.arrival_time.as_str()).unwrap()) },

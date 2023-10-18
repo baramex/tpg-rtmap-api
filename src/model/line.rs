@@ -113,6 +113,14 @@ impl TransportMode {
     }
 }
 
+impl TryFrom<String> for TransportMode {
+    type Error = ();
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        return Ok(Self::from_str(value.as_str()).unwrap());
+    }
+}
+
 impl<'de> Deserialize<'de> for TransportMode {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -140,6 +148,17 @@ impl FromStr for TransportMode {
             "T" => Self::Tramway,
             "U" => Self::Unknown,
             "Z" => Self::Rail,
+            "Lift" => Self::Lift,
+            "Bus" => Self::Bus,
+            "Chairlift" => Self::Chairlift,
+            "RackRailroad" => Self::RackRailroad,
+            "CableWay" => Self::CableWay,
+            "Underground" => Self::Underground,
+            "Funicular" => Self::Funicular,
+            "Ship" => Self::Ship,
+            "Tramway" => Self::Tramway,
+            "Unknown" => Self::Unknown,
+            "Rail" => Self::Rail,
             _ => Self::Unknown,
         };
         Ok(t)

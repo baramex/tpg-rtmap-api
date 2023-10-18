@@ -1,8 +1,6 @@
 use std::str::FromStr;
 
-use env_logger::fmt::Color;
 use serde::{Deserialize, Deserializer, Serialize};
-use sqlx::{database::HasValueRef, error::BoxDynError, Database, Decode, FromRow, postgres::PgRow};
 
 #[derive(Debug)]
 pub struct Hour {
@@ -20,6 +18,14 @@ impl Hour {
             hour: value / 60,
             minute: value % 60,
         }
+    }
+}
+
+impl TryFrom<i16> for Hour {
+    type Error = ();
+
+    fn try_from(value: i16) -> Result<Self, Self::Error> {
+        return Ok(Self::from_value(value));
     }
 }
 
@@ -48,13 +54,6 @@ pub enum ColorType {
     Light,
     Unknown,
 }
-
-/*impl FromRow<'_, PgRow> for ColorType {
-    fn from_row(row: &PgRow) -> Result<Self, sqlx::Error> {
-        let str = row.try_get::<&str, usize>(0)?;
-        Ok(Self::from_str("255 255 255").unwrap())
-    }
-}*/
 
 impl TryFrom<String> for ColorType {
     type Error = ();
@@ -96,6 +95,14 @@ impl<'de> Deserialize<'de> for Direction {
     }
 }
 
+impl TryFrom<String> for Direction {
+    type Error = ();
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        return Ok(Self::from_str(value.as_str()).unwrap());
+    }
+}
+
 impl FromStr for Direction {
     type Err = ();
 
@@ -103,6 +110,8 @@ impl FromStr for Direction {
         let t: Self = match s {
             "H" => Self::Outward,
             "R" => Self::Return,
+            "Outward" => Self::Outward,
+            "Return" => Self::Return,
             _ => panic!("Unknown direction: {}", s),
         };
         Ok(t)

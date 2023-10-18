@@ -11,13 +11,17 @@ pub struct Trip {
     pub id: i32,
     pub journey_number: i32,
     pub option_count: i16,
+    #[sqlx(try_from = "String")]
     pub transport_mode: TransportMode,
     pub origin_id: i32,
     pub destination_id: i32,
     pub bitfield_id: i32,
     pub line_id: i32,
+    #[sqlx(try_from = "String")]
     pub direction: Direction,
+    #[sqlx(try_from = "i16")]
     pub departure_time: Hour,
+    #[sqlx(try_from = "i16")]
     pub arrival_time: Hour,
 }
 
