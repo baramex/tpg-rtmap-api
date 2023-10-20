@@ -70,9 +70,9 @@ async fn main() -> std::io::Result<()> {
 
     let insert_bitfields = false;
     let insert_lines = false;
-    let insert_stops = false;
-    let insert_trips = false;
-    let insert_trip_stops = false;
+    let insert_stops = true;
+    let insert_trips = true;
+    let insert_trip_stops = true;
 
     let mut fahrplans: Vec<Fahrplan> = Vec::new();
 
@@ -98,7 +98,11 @@ async fn main() -> std::io::Result<()> {
 
     if insert_trips || insert_trip_stops || insert_stops {
         println!("Getting fahrplans...");
-        fahrplans = hrdf.get_fahrplans().unwrap();
+        let res = hrdf.get_fahrplans();
+        if res.is_err() {
+            panic!("Error: {:?}", res.err().unwrap());
+        }
+        fahrplans = res.unwrap();
         println!("Got fahrplans: {}", fahrplans.len());
     }
 

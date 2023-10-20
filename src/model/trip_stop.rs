@@ -50,6 +50,7 @@ impl Table for TripStop {
     fn values(&self) -> Vec<Box<dyn std::any::Any>> {
         vec![
             Box::new(self.id),
+            Box::new(self.stop_id),
             Box::new(self.trip_id),
             Box::new(self.sequence),
             Box::new(if self.arrival_time.is_some() {
@@ -66,7 +67,7 @@ impl Table for TripStop {
     }
 
     fn keys() -> String {
-        return "(id,trip_id,sequence,arrival_time,departure_time)".to_string();
+        return "(id,stop_id,trip_id,sequence,arrival_time,departure_time)".to_string();
     }
 
     async fn create_table(database: &Database) -> Result<PgQueryResult, Error> {
