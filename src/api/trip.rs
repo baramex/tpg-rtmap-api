@@ -79,6 +79,8 @@ pub async fn get_trips(
     let end_datetime: DateTime<Utc> =
         DateTime::from_utc(information.end_date.and_hms_opt(23, 59, 59).unwrap(), Utc);
 
+    // TODO: change offset to zurich's timezone
+
     if date.lt(&start_datetime) || date.gt(&end_datetime) {
         return Err(TripError::InvalidTimePeriod);
     }
@@ -92,7 +94,7 @@ pub async fn get_trips(
     let bitfield_number: i16 = day_number + 2;
 
     let trips: Option<Vec<Trip>> = database
-        .get_many::<Trip>(sqlx::query_as::<_, Trip>(format!("SELECT * FROM {} JOIN bitfields ON bitfield_id = bitfields.id WHERE departure_time <= $1 AND arrival_time >= $1 and SUBSTRING(days,$2,$2) = $3", Trip::TABLE_NAME).as_str()).bind(hour.value()).bind(bitfield_number+1).bind("1"))
+        .get_many::<Trip>(sqlx::query_as::<_, Trip>(format!("SELECT * FROM {} JOIN bitfields ON bitfield_id = bitfields.id WHERE departure_time <= $1 AND arrival_time >= $1 AND SUBSTRING(days,$2,1) = '1'", Trip::TABLE_NAME).as_str()).bind(hour.value()).bind(bitfield_number+1))
         .await;
 
     match trips {
