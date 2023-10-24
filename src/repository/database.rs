@@ -32,7 +32,7 @@ impl Database {
         return sqlx::query(query).execute(&self.pool).await;
     }
 
-    pub async fn get<T>(&self, query: QueryAs<'_, Postgres, T, PgArguments>) -> Option<Vec<T>>
+    pub async fn get_many<T>(&self, query: QueryAs<'_, Postgres, T, PgArguments>) -> Option<Vec<T>>
     where
         T: for<'r> sqlx::FromRow<'r, PgRow> + Send + Unpin,
     {
@@ -54,14 +54,14 @@ impl Database {
     where
         T: for<'r> sqlx::FromRow<'r, PgRow> + Send + Unpin,
     {
-        let rows: Option<Vec<T>> = self.get::<T>(query).await;
+        let res: Result<T, Error> = query.fetch_one(&self.pool).await;
 
-        return match rows {
-            Some(mut rows) => match rows.len() {
-                0 => None,
-                _ => Some(rows.pop().unwrap()),
-            },
-            None => None,
+        return match res {
+            Ok(output) => Some(output),
+            Err(error) => {
+                error!("Error: {:?}", error);
+                None
+            }
         };
     }
 
