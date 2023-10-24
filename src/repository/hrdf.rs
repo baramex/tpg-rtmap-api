@@ -1,3 +1,4 @@
+use chrono::{NaiveDate, Utc};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::model::{
@@ -149,6 +150,11 @@ pub struct Fahrplan {
     pub stops: Vec<RawFahrplanStop>,
 }
 
+pub struct CornerDates {
+    pub start_date: NaiveDate,
+    pub end_date: NaiveDate,
+}
+
 /*
 fichiers hrdf
 fplan:
@@ -181,7 +187,19 @@ impl HRDF {
         return Ok(reader);
     }
 
-    pub fn get_bitfields(&self) -> Result<Vec<Bitfield>, Error> {
+    pub fn extract_bitfield_ids(&self, fahrplans: &Vec<Fahrplan>) -> Vec<i32> {
+        let mut bitfield_ids: Vec<i32> = Vec::new();
+
+        for fahrplan in fahrplans {
+            if !bitfield_ids.contains(&fahrplan.a.bit_field_number) {
+                bitfield_ids.push(fahrplan.a.bit_field_number);
+            }
+        }
+
+        return bitfield_ids;
+    }
+
+    pub fn retrieve_bitfields(&self, ids: Vec<i32>) -> Result<Vec<Bitfield>, Error> {
         let reader: BufReader<File> = self.create_reader("BITFELD")?;
         let mut lines: Lines<BufReader<File>> = reader.lines();
 
@@ -190,15 +208,29 @@ impl HRDF {
         while let Some(Ok(line)) = lines.next() {
             let bf_line: RawBitfeld = RawBitfeld::from_line(&line);
 
-            let bitfield: Bitfield = Bitfield {
-                id: bf_line.number,
-                days: bf_line.days,
-            };
+            if ids.contains(&bf_line.number) {
+                let bitfield: Bitfield = Bitfield {
+                    id: bf_line.number,
+                    days: Bitfield::convert_hex_to_bits(bf_line.days.as_str()),
+                };
 
-            bitfields.push(bitfield);
+                bitfields.push(bitfield);
+            }
         }
 
         return Ok(bitfields);
+    }
+
+    pub fn get_corner_dates(&self) -> Result<CornerDates, Error> {
+        let reader: BufReader<File> = self.create_reader("ECKDATEN")?;
+        let mut lines: Lines<BufReader<File>> = reader.lines();
+
+        let corner_dates = CornerDates {
+            start_date: NaiveDate::parse_from_str(lines.next().unwrap()?.as_str(), "%d.%m.%Y").unwrap(),
+            end_date: NaiveDate::parse_from_str(lines.next().unwrap()?.as_str(), "%d.%m.%Y").unwrap(),
+        };
+
+        return Ok(corner_dates);
     }
 
     pub fn get_lines(&self) -> Result<Vec<Line>, Error> {
@@ -309,6 +341,7 @@ impl HRDF {
                         .as_str(),
                 )
                 .unwrap(),
+                days: None,
             };
 
             trips.push(trip);
@@ -332,8 +365,16 @@ impl HRDF {
                     stop_id: stop.id,
                     trip_id: i,
                     sequence: j,
-                    arrival_time: if stop.arrival_time.is_empty() { None } else { Some(Hour::from_str(stop.arrival_time.as_str()).unwrap()) },
-                    departure_time: if stop.departure_time.is_empty() { None } else { Some(Hour::from_str(stop.departure_time.as_str()).unwrap()) },
+                    arrival_time: if stop.arrival_time.is_empty() {
+                        None
+                    } else {
+                        Some(Hour::from_str(stop.arrival_time.as_str()).unwrap())
+                    },
+                    departure_time: if stop.departure_time.is_empty() {
+                        None
+                    } else {
+                        Some(Hour::from_str(stop.departure_time.as_str()).unwrap())
+                    },
                 };
 
                 trip_stops.push(trip_stop);

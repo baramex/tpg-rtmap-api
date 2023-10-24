@@ -84,7 +84,6 @@ impl Table for TripStop {
             CONSTRAINT fk_trip
                 FOREIGN KEY(trip_id)
                     REFERENCES trips(id)
-                    ON DELETE CASCADE
         )",
                     Self::TABLE_NAME
                 )

@@ -10,10 +10,10 @@ use api::{line::get_line, stop::get_stop, trip::{get_trip, get_trip_stops, get_t
 
 use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 use dotenv::dotenv;
-use model::{bitfield::Bitfield, line::Line, stop::Stop, trip::Trip, trip_stop::TripStop};
+use model::{bitfield::Bitfield, line::Line, stop::Stop, trip::Trip, trip_stop::TripStop, information::Information};
 use repository::{
     database::Database,
-    hrdf::{Fahrplan, HRDF},
+    hrdf::{Fahrplan, HRDF, CornerDates},
 };
 use sqlx::{postgres::{PgPoolOptions, PgConnectOptions}, ConnectOptions};
 
@@ -60,6 +60,7 @@ async fn main() -> std::io::Result<()> {
     let _ = Stop::create_table(&database).await;
     let _ = Trip::create_table(&database).await;
     let _ = TripStop::create_table(&database).await;
+    let _ = Information::create_table(&database).await;
 
     // retrieve data from hrdf and insert into database
     let hrdf: HRDF = HRDF {
@@ -73,18 +74,9 @@ async fn main() -> std::io::Result<()> {
     let insert_stops = false;
     let insert_trips = false;
     let insert_trip_stops = false;
+    let insert_information = false;
 
     let mut fahrplans: Vec<Fahrplan> = Vec::new();
-
-    if insert_bitfields {
-        println!("Getting bitfields...");
-        let bitfields: Vec<Bitfield> = hrdf.get_bitfields().unwrap();
-        println!("Got bitfields: {}", bitfields.len());
-
-        println!("Inserting bitfields...");
-        let _b = Database::insert_many::<Bitfield>(&database, &bitfields).await;
-        println!("Inserted bitfields");
-    }
 
     if insert_lines {
         println!("Getting lines...");
@@ -96,7 +88,21 @@ async fn main() -> std::io::Result<()> {
         println!("Inserted lines");
     }
 
-    if insert_trips || insert_trip_stops || insert_stops {
+    if insert_information {
+        println!("Getting information...");
+        let corner_dates: CornerDates = hrdf.get_corner_dates().unwrap();
+        println!("Got corner dates");
+
+        println!("Inserting information...");
+        let _i = Database::insert_many::<Information>(&database, &vec![Information {
+            id: 1,
+            start_date: corner_dates.start_date,
+            end_date: corner_dates.end_date,
+        }]).await;
+        println!("Inserted information");
+    }
+
+    if insert_trips || insert_trip_stops || insert_stops || insert_bitfields {
         println!("Getting fahrplans...");
         let res = hrdf.get_fahrplans();
         if res.is_err() {
@@ -104,6 +110,17 @@ async fn main() -> std::io::Result<()> {
         }
         fahrplans = res.unwrap();
         println!("Got fahrplans: {}", fahrplans.len());
+    }
+
+    if insert_bitfields {
+        println!("Getting bitfields...");
+        let bitfield_ids: Vec<i32> = hrdf.extract_bitfield_ids(&fahrplans);
+        let bitfields: Vec<Bitfield> = hrdf.retrieve_bitfields(bitfield_ids).unwrap();
+        println!("Got bitfields: {}", bitfields.len());
+
+        println!("Inserting bitfields...");
+        let _b = Database::insert_many::<Bitfield>(&database, &bitfields).await;
+        println!("Inserted bitfields");
     }
 
     if insert_stops {

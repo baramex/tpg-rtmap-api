@@ -15,7 +15,9 @@ use serde::Deserialize;
 use sqlx::{Postgres, QueryBuilder};
 
 use crate::{
-    model::{trip::Trip, trip_stop::TripStop, types::Hour, bitfield::Bitfield},
+    model::{
+        bitfield::Bitfield, information::Information, trip::Trip, trip_stop::TripStop, types::Hour,
+    },
     repository::database::{Database, Table},
 };
 
@@ -64,25 +66,20 @@ pub async fn get_trips(
         return Err(TripError::BadTripRequest);
     }
 
-    let start_date: DateTime<Utc> = DateTime::from_utc(
-        NaiveDateTime::from_timestamp_opt(
-            env::var("START_TIMESTAMP").unwrap().parse::<i64>().unwrap(),
-            0,
-        )
-        .unwrap(),
-        Utc,
-    );
-    let end_date: DateTime<Utc> = DateTime::from_utc(
-        NaiveDateTime::from_timestamp_opt(
-            env::var("END_TIMESTAMP").unwrap().parse::<i64>().unwrap(),
-            0,
-        )
-        .unwrap(),
-        Utc,
-    );
-
     let date: DateTime<Utc> = DateTime::from_utc(naive_date.unwrap(), Utc);
-    if date.lt(&start_date) || date.gt(&end_date) {
+    let information: Information = database
+        .get_one::<Information>(sqlx::query_as::<_, Information>(
+            format!("SELECT * FROM {}", Information::TABLE_NAME).as_str(),
+        ))
+        .await
+        .unwrap();
+
+    let start_datetime: DateTime<Utc> =
+        DateTime::from_utc(information.start_date.and_hms_opt(0, 0, 0).unwrap(), Utc);
+    let end_datetime: DateTime<Utc> =
+        DateTime::from_utc(information.end_date.and_hms_opt(23, 59, 59).unwrap(), Utc);
+
+    if date.lt(&start_datetime) || date.gt(&end_datetime) {
         return Err(TripError::InvalidTimePeriod);
     }
 
@@ -91,10 +88,11 @@ pub async fn get_trips(
         minute: i16::try_from(date.minute()).unwrap(),
     };
 
-    // TODO: day of operation
+    let day_number: i16 = date.signed_duration_since(start_datetime).num_days() as i16;
+    let bitfield_number: i16 = day_number + 2;
 
     let trips: Option<Vec<Trip>> = database
-        .get_many::<Trip>(sqlx::query_as::<_, Trip>(format!("SELECT * FROM {} INNER JOIN bitfields ON bitfield_id = bitfields.id WHERE departure_time <= $1 AND arrival_time >= $1", Trip::TABLE_NAME).as_str()).bind(hour.value()))
+        .get_many::<Trip>(sqlx::query_as::<_, Trip>(format!("SELECT * FROM {} JOIN bitfields ON bitfield_id = bitfields.id WHERE departure_time <= $1 AND arrival_time >= $1 and SUBSTRING(days,$2,$2) = $3", Trip::TABLE_NAME).as_str()).bind(hour.value()).bind(bitfield_number+1).bind("1"))
         .await;
 
     match trips {
@@ -114,7 +112,12 @@ pub async fn get_trip(
     }
 
     let trip: Option<Trip> = database
-        .get_one::<Trip>(sqlx::query_as::<_, Trip>(format!("SELECT * FROM {} WHERE id=$1", Trip::TABLE_NAME).as_str()).bind(id.unwrap()))
+        .get_one::<Trip>(
+            sqlx::query_as::<_, Trip>(
+                format!("SELECT * FROM {} WHERE id=$1", Trip::TABLE_NAME).as_str(),
+            )
+            .bind(id.unwrap()),
+        )
         .await;
 
     match trip {

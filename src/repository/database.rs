@@ -2,10 +2,11 @@ use std::any::TypeId;
 use std::ops::Add;
 
 use async_trait::async_trait;
+use chrono::NaiveDate;
 use log::error;
-use sqlx::postgres::{PgPool, PgPoolOptions, PgQueryResult, PgRow, PgConnectOptions, PgArguments};
-use sqlx::{Error, Postgres};
+use sqlx::postgres::{PgArguments, PgConnectOptions, PgPool, PgPoolOptions, PgQueryResult, PgRow};
 use sqlx::query::QueryAs;
+use sqlx::{Error, Postgres};
 
 #[async_trait]
 pub trait Table {
@@ -22,7 +23,10 @@ pub struct Database {
 }
 
 impl Database {
-    pub async fn init(config: PgPoolOptions, connect_options: PgConnectOptions) -> Result<Database, Error> {
+    pub async fn init(
+        config: PgPoolOptions,
+        connect_options: PgConnectOptions,
+    ) -> Result<Database, Error> {
         Ok(Database {
             pool: config.connect_with(connect_options).await?,
         })
@@ -109,6 +113,11 @@ impl Database {
                 } else if TypeId::of::<String>() == value.type_id() {
                     let n: String = *value.downcast::<String>().unwrap();
                     final_query = final_query.bind(n);
+                } else if TypeId::of::<NaiveDate>() == value.type_id() {
+                    let n: NaiveDate = *value.downcast::<NaiveDate>().unwrap();
+                    final_query = final_query.bind(n);
+                } else {
+                    panic!("Unknown type");
                 }
             }
 

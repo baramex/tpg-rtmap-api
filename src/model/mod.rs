@@ -4,3 +4,4 @@ pub mod types;
 pub mod bitfield;
 pub mod trip;
 pub mod trip_stop;
+pub mod information;

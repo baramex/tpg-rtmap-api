@@ -23,6 +23,7 @@ pub struct Trip {
     pub departure_time: Hour,
     #[sqlx(try_from = "i16")]
     pub arrival_time: Hour,
+    pub days: Option<String>
 }
 
 #[async_trait]
@@ -67,20 +68,16 @@ impl Table for Trip {
             arrival_time SMALLINT NOT NULL,
             CONSTRAINT fk_origin
                 FOREIGN KEY(origin_id)
-                    REFERENCES stops(id)
-                    ON DELETE CASCADE,
+                    REFERENCES stops(id),
             CONSTRAINT fk_destination
                 FOREIGN KEY(destination_id)
-                    REFERENCES stops(id)
-                    ON DELETE CASCADE,
+                    REFERENCES stops(id),
             CONSTRAINT fk_bitfield
                 FOREIGN KEY(bitfield_id)
-                    REFERENCES bitfields(id)
-                    ON DELETE CASCADE,
+                    REFERENCES bitfields(id),
             CONSTRAINT fk_line
                 FOREIGN KEY(line_id)
                     REFERENCES lines(id)
-                    ON DELETE CASCADE
         )",
                     Self::TABLE_NAME
                 )
