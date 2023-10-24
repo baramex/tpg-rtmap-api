@@ -15,7 +15,7 @@ use serde::Deserialize;
 use sqlx::{Postgres, QueryBuilder};
 
 use crate::{
-    model::{trip::Trip, trip_stop::TripStop, types::Hour},
+    model::{trip::Trip, trip_stop::TripStop, types::Hour, bitfield::Bitfield},
     repository::database::{Database, Table},
 };
 
@@ -94,7 +94,7 @@ pub async fn get_trips(
     // TODO: day of operation
 
     let trips: Option<Vec<Trip>> = database
-        .get_many::<Trip>(sqlx::query_as::<_, Trip>(format!("SELECT * FROM {} WHERE departure_time <= $1 AND arrival_time >= $2", Trip::TABLE_NAME).as_str()).bind(hour.value()).bind(hour.value()))
+        .get_many::<Trip>(sqlx::query_as::<_, Trip>(format!("SELECT * FROM {} INNER JOIN bitfields ON bitfield_id = bitfields.id WHERE departure_time <= $1 AND arrival_time >= $1", Trip::TABLE_NAME).as_str()).bind(hour.value()))
         .await;
 
     match trips {
