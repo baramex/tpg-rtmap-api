@@ -6,16 +6,27 @@ use crate::repository::database::Table;
 
 use std::{env, path::Path, str::FromStr};
 
-use api::{line::{get_line, get_lines}, stop::{get_stop, get_stops}, trip::{get_trip, get_trip_stops, get_trips}};
+use api::{
+    line::{get_line, get_lines},
+    stop::{get_stop, get_stops},
+    trip::{get_trip, get_trip_stops, get_trips},
+};
 
 use actix_web::{middleware::Logger, web::Data, App, HttpServer};
+use actix_cors::Cors;
 use dotenv::dotenv;
-use model::{bitfield::Bitfield, line::Line, stop::Stop, trip::Trip, trip_stop::TripStop, information::Information};
+use model::{
+    bitfield::Bitfield, information::Information, line::Line, stop::Stop, trip::Trip,
+    trip_stop::TripStop,
+};
 use repository::{
     database::Database,
-    hrdf::{Fahrplan, HRDF, CornerDates},
+    hrdf::{CornerDates, Fahrplan, HRDF},
 };
-use sqlx::{postgres::{PgPoolOptions, PgConnectOptions}, ConnectOptions};
+use sqlx::{
+    postgres::{PgConnectOptions, PgPoolOptions},
+    ConnectOptions,
+};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -28,7 +39,9 @@ async fn main() -> std::io::Result<()> {
     // init database
     let database: Database = Database::init(
         PgPoolOptions::new(),
-        PgConnectOptions::from_str(env::var("DATABASE_URL").unwrap().as_str()).unwrap().disable_statement_logging()
+        PgConnectOptions::from_str(env::var("DATABASE_URL").unwrap().as_str())
+            .unwrap()
+            .disable_statement_logging(),
     )
     .await
     .unwrap();
@@ -94,11 +107,15 @@ async fn main() -> std::io::Result<()> {
         println!("Got corner dates");
 
         println!("Inserting information...");
-        let _i = Database::insert_many::<Information>(&database, &vec![Information {
-            id: 1,
-            start_date: corner_dates.start_date,
-            end_date: corner_dates.end_date,
-        }]).await;
+        let _i = Database::insert_many::<Information>(
+            &database,
+            &vec![Information {
+                id: 1,
+                start_date: corner_dates.start_date,
+                end_date: corner_dates.end_date,
+            }],
+        )
+        .await;
         println!("Inserted information");
     }
 
@@ -157,8 +174,24 @@ async fn main() -> std::io::Result<()> {
     // init http server
     HttpServer::new(move || {
         let db_data: Data<Database> = Data::new(database.clone());
+
         let logger: Logger = Logger::default();
-        App::new().app_data(db_data).wrap(logger).service(get_line).service(get_lines).service(get_stop).service(get_stops).service(get_trip).service(get_trip_stops).service(get_trips)
+
+        let cors = Cors::default()
+            .allowed_origin("http://localhost:3000")
+            .allowed_methods(vec!["GET"]);
+
+        App::new()
+            .app_data(db_data)
+            .wrap(cors)
+            .wrap(logger)
+            .service(get_line)
+            .service(get_lines)
+            .service(get_stop)
+            .service(get_stops)
+            .service(get_trip)
+            .service(get_trip_stops)
+            .service(get_trips)
     })
     .bind(("127.0.0.1", 10000))?
     .run()
