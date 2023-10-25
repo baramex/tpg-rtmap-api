@@ -14,7 +14,6 @@ use std::{
     fs::File,
     io::{BufRead, BufReader, Error, Lines},
     path::PathBuf,
-    str::FromStr,
 };
 
 pub struct HRDF {
@@ -336,18 +335,16 @@ impl HRDF {
                 bitfield_id: fahrplan.a.bit_field_number,
                 line_id: fahrplan.l.line_number,
                 direction: fahrplan.r.direction,
-                departure_time: NaiveTime::parse_from_str(
-                    fahrplan.stops[0].departure_time.as_str(),
-                    "%H%M",
+                arrival_time: NaiveTime::from_hms_opt(
+                    fahrplan.stops[0].departure_time[1..3].parse().unwrap(),
+                    fahrplan.stops[0].departure_time[3..5].parse().unwrap(),
+                    0,
                 )
-                .unwrap()
-                .with_second(15)
                 .unwrap(),
-                arrival_time: NaiveTime::parse_from_str(
-                    fahrplan.stops[fahrplan.stops.len() - 1]
-                        .arrival_time
-                        .as_str(),
-                    "%H%M",
+                departure_time: NaiveTime::from_hms_opt(
+                    fahrplan.stops[0].departure_time[1..3].parse().unwrap(),
+                    fahrplan.stops[0].departure_time[3..5].parse().unwrap(),
+                    15,
                 )
                 .unwrap(),
             };
@@ -376,16 +373,25 @@ impl HRDF {
                     arrival_time: if stop.arrival_time.is_empty() {
                         None
                     } else {
-                        Some(NaiveTime::parse_from_str(stop.arrival_time.as_str(), "%H%M").unwrap())
+                        Some(
+                            NaiveTime::from_hms_opt(
+                                fahrplan.stops[0].departure_time[1..3].parse().unwrap(),
+                                fahrplan.stops[0].departure_time[3..5].parse().unwrap(),
+                                0,
+                            )
+                            .unwrap(),
+                        )
                     },
                     departure_time: if stop.departure_time.is_empty() {
                         None
                     } else {
                         Some(
-                            NaiveTime::parse_from_str(stop.departure_time.as_str(), "%H%M")
-                                .unwrap()
-                                .with_second(15)
-                                .unwrap(),
+                            NaiveTime::from_hms_opt(
+                                fahrplan.stops[0].departure_time[1..3].parse().unwrap(),
+                                fahrplan.stops[0].departure_time[3..5].parse().unwrap(),
+                                15,
+                            )
+                            .unwrap(),
                         )
                     },
                 };
