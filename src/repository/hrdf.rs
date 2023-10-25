@@ -1,4 +1,4 @@
-use chrono::{NaiveDate, Utc};
+use chrono::{NaiveDate, NaiveTime, Timelike};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::model::{
@@ -7,7 +7,7 @@ use crate::model::{
     stop::Stop,
     trip::Trip,
     trip_stop::TripStop,
-    types::{ColorType, Direction, Hour},
+    types::{ColorType, Direction},
 };
 use std::{
     cmp,
@@ -226,8 +226,10 @@ impl HRDF {
         let mut lines: Lines<BufReader<File>> = reader.lines();
 
         let corner_dates = CornerDates {
-            start_date: NaiveDate::parse_from_str(lines.next().unwrap()?.as_str(), "%d.%m.%Y").unwrap(),
-            end_date: NaiveDate::parse_from_str(lines.next().unwrap()?.as_str(), "%d.%m.%Y").unwrap(),
+            start_date: NaiveDate::parse_from_str(lines.next().unwrap()?.as_str(), "%d.%m.%Y")
+                .unwrap(),
+            end_date: NaiveDate::parse_from_str(lines.next().unwrap()?.as_str(), "%d.%m.%Y")
+                .unwrap(),
         };
 
         return Ok(corner_dates);
@@ -334,13 +336,16 @@ impl HRDF {
                 bitfield_id: fahrplan.a.bit_field_number,
                 line_id: fahrplan.l.line_number,
                 direction: fahrplan.r.direction,
-                departure_time: Hour::from_str(fahrplan.stops[0].departure_time.as_str()).unwrap(),
-                arrival_time: Hour::from_str(
+                departure_time: NaiveTime::from_str(fahrplan.stops[0].departure_time.as_str())
+                    .unwrap()
+                    .with_second(15)
+                    .unwrap(),
+                arrival_time: NaiveTime::from_str(
                     fahrplan.stops[fahrplan.stops.len() - 1]
                         .arrival_time
                         .as_str(),
                 )
-                .unwrap()
+                .unwrap(),
             };
 
             trips.push(trip);
@@ -367,12 +372,17 @@ impl HRDF {
                     arrival_time: if stop.arrival_time.is_empty() {
                         None
                     } else {
-                        Some(Hour::from_str(stop.arrival_time.as_str()).unwrap())
+                        Some(NaiveTime::from_str(stop.arrival_time.as_str()).unwrap())
                     },
                     departure_time: if stop.departure_time.is_empty() {
                         None
                     } else {
-                        Some(Hour::from_str(stop.departure_time.as_str()).unwrap())
+                        Some(
+                            NaiveTime::from_str(stop.departure_time.as_str())
+                                .unwrap()
+                                .with_second(15)
+                                .unwrap(),
+                        )
                     },
                 };
 

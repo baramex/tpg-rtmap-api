@@ -1,10 +1,11 @@
 use async_trait::async_trait;
+use chrono::NaiveTime;
 use serde::Serialize;
 use sqlx::{postgres::PgQueryResult, Error, FromRow};
 
 use crate::repository::database::{Database, Table};
 
-use super::{types::{Direction, Hour}, line::TransportMode};
+use super::{line::TransportMode, types::Direction};
 
 #[derive(Serialize, FromRow, Debug)]
 pub struct Trip {
@@ -19,10 +20,8 @@ pub struct Trip {
     pub line_id: i32,
     #[sqlx(try_from = "String")]
     pub direction: Direction,
-    #[sqlx(try_from = "i16")]
-    pub departure_time: Hour,
-    #[sqlx(try_from = "i16")]
-    pub arrival_time: Hour
+    pub departure_time: NaiveTime,
+    pub arrival_time: NaiveTime,
 }
 
 #[async_trait]
@@ -40,8 +39,8 @@ impl Table for Trip {
             Box::new(self.bitfield_id),
             Box::new(self.line_id),
             Box::new(format!("{:?}", self.direction)),
-            Box::new(self.departure_time.value()),
-            Box::new(self.arrival_time.value()),
+            Box::new(self.departure_time),
+            Box::new(self.arrival_time),
         ]
     }
 
@@ -63,8 +62,8 @@ impl Table for Trip {
             bitfield_id INTEGER NOT NULL,
             line_id INTEGER NOT NULL,
             direction VARCHAR(7) NOT NULL,
-            departure_time SMALLINT NOT NULL,
-            arrival_time SMALLINT NOT NULL,
+            departure_time TIME NOT NULL,
+            arrival_time TIME NOT NULL,
             CONSTRAINT fk_origin
                 FOREIGN KEY(origin_id)
                     REFERENCES stops(id),

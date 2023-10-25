@@ -1,3 +1,5 @@
+use std::ops::AddAssign;
+
 use actix_web::{
     error::ResponseError,
     get,
@@ -7,13 +9,14 @@ use actix_web::{
     web::{Json, Query},
     HttpResponse,
 };
-use chrono::{NaiveDateTime, TimeZone, Timelike, Datelike};
+use chrono::{Datelike, NaiveDateTime, TimeZone, Duration, NaiveTime};
 use chrono_tz::Europe::Zurich;
 use derive_more::Display;
 use serde::Deserialize;
+use std::ops::SubAssign;
 
 use crate::{
-    model::{information::Information, trip::Trip, trip_stop::TripStop, types::Hour},
+    model::{information::Information, trip::Trip, trip_stop::TripStop},
     repository::database::{Database, Table},
 };
 
@@ -33,7 +36,7 @@ pub enum TripError {
     TripNotFound,
     BadTripRequest,
     InvalidTimePeriod,
-    InvalidBounds
+    InvalidBounds,
 }
 
 impl ResponseError for TripError {
@@ -76,25 +79,42 @@ pub async fn get_trips(
         .await
         .unwrap();
 
-    let start_datetime =
-        Zurich.with_ymd_and_hms(information.start_date.year(), information.start_date.month(), information.start_date.day(), 0, 0, 0).unwrap();
-    let end_datetime =
-        Zurich.with_ymd_and_hms(information.end_date.year(), information.end_date.month(), information.end_date.day(), 23, 59, 59).unwrap();
+    let start_datetime = Zurich
+        .with_ymd_and_hms(
+            information.start_date.year(),
+            information.start_date.month(),
+            information.start_date.day(),
+            0,
+            0,
+            0,
+        )
+        .unwrap();
+    let end_datetime = Zurich
+        .with_ymd_and_hms(
+            information.end_date.year(),
+            information.end_date.month(),
+            information.end_date.day(),
+            23,
+            59,
+            59,
+        )
+        .unwrap();
 
     if date.lt(&start_datetime) || date.gt(&end_datetime) {
         return Err(TripError::InvalidTimePeriod);
     }
 
-    let hour = Hour {
-        hour: i16::try_from(date.hour()).unwrap(),
-        minute: i16::try_from(date.minute()).unwrap(),
-    };
+    let mut upper_time_bound: NaiveTime = date.time();
+    upper_time_bound.add_assign(Duration::minutes(bounds as i64));
+    let mut lower_time_bound: NaiveTime = date.time();
+    lower_time_bound.sub_assign(Duration::minutes(bounds as i64));
 
     let day_number: i16 = date.signed_duration_since(start_datetime).num_days() as i16;
     let bitfield_number: i16 = day_number + 2;
 
+    // TODO: manage trips that are after 00h
     let trips: Option<Vec<Trip>> = database
-        .get_many::<Trip>(sqlx::query_as::<_, Trip>(format!("SELECT trips.id, trips.journey_number, trips.option_count, trips.transport_mode, trips.origin_id, trips.destination_id, trips.bitfield_id, trips.line_id, trips.direction, trips.departure_time, trips.arrival_time FROM {} JOIN bitfields ON bitfield_id = bitfields.id WHERE departure_time <= $1 AND arrival_time >= $2 AND SUBSTRING(days,$3,1) = '1'", Trip::TABLE_NAME).as_str()).bind(hour.value() + bounds).bind(hour.value() - bounds).bind(bitfield_number+1))
+        .get_many::<Trip>(sqlx::query_as::<_, Trip>(format!("SELECT trips.id, trips.journey_number, trips.option_count, trips.transport_mode, trips.origin_id, trips.destination_id, trips.bitfield_id, trips.line_id, trips.direction, trips.departure_time, trips.arrival_time FROM {} JOIN bitfields ON bitfield_id = bitfields.id WHERE departure_time <= $1 AND arrival_time >= $2 AND SUBSTRING(days,$3,1) = '1'", Trip::TABLE_NAME).as_str()).bind(upper_time_bound).bind(lower_time_bound).bind(bitfield_number+1))
         .await;
 
     match trips {
