@@ -383,11 +383,8 @@ impl HRDF {
                     } else {
                         Some(
                             NaiveTime::from_hms_opt(
-                                fahrplan.stops[0].departure_time[1..3]
-                                    .parse::<u32>()
-                                    .unwrap()
-                                    % 24, // TODO: manage trips that are after 00h
-                                fahrplan.stops[0].departure_time[3..5].parse().unwrap(),
+                                stop.arrival_time[1..3].parse::<u32>().unwrap() % 24, // TODO: manage trips that are after 00h
+                                stop.arrival_time[3..5].parse().unwrap(),
                                 0,
                             )
                             .unwrap(),
@@ -398,11 +395,8 @@ impl HRDF {
                     } else {
                         Some(
                             NaiveTime::from_hms_opt(
-                                fahrplan.stops[0].departure_time[1..3]
-                                    .parse::<u32>()
-                                    .unwrap()
-                                    % 24, // TODO: manage trips that are after 00h
-                                fahrplan.stops[0].departure_time[3..5].parse().unwrap(),
+                                stop.departure_time[1..3].parse::<u32>().unwrap() % 24, // TODO: manage trips that are after 00h
+                                stop.departure_time[3..5].parse().unwrap(),
                                 15,
                             )
                             .unwrap(),
