@@ -41,6 +41,16 @@ impl ResponseError for LineError {
     }
 }
 
+#[get("/lines")]
+pub async fn get_lines(database: Data<Database>) -> Result<Json<Vec<Line>>, LineError> {
+    let lines: Option<Vec<Line>> = database.get_all::<Line>(Line::TABLE_NAME).await;
+
+    match lines {
+        Some(lines) => Ok(Json(lines)),
+        None => Err(LineError::LineNotFound),
+    }
+}
+
 #[get("/line/{id}")]
 pub async fn get_line(
     identifier: Path<LineIdentifier>,
@@ -53,7 +63,10 @@ pub async fn get_line(
 
     let line: Option<Line> = database
         .get_one::<Line>(
-            sqlx::query_as::<_, Line>(format!("SELECT * FROM {} WHERE id=$1", Line::TABLE_NAME).as_str()).bind(id.unwrap())
+            sqlx::query_as::<_, Line>(
+                format!("SELECT * FROM {} WHERE id=$1", Line::TABLE_NAME).as_str(),
+            )
+            .bind(id.unwrap()),
         )
         .await;
 
