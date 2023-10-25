@@ -69,6 +69,25 @@ impl Database {
         };
     }
 
+    pub async fn get_all<T>(&self, table_name: &str) -> Option<Vec<T>>
+    where
+        T: for<'r> sqlx::FromRow<'r, PgRow> + Send + Unpin,
+    {
+        let query = format!("SELECT * FROM {}", table_name);
+        let res: Result<Vec<T>, Error> = sqlx::query_as::<_, T>(&query).fetch_all(&self.pool).await;
+
+        return match res {
+            Ok(output) => match output.len() {
+                0 => None,
+                _ => Some(output),
+            },
+            Err(error) => {
+                error!("Error: {:?}", error);
+                None
+            }
+        };
+    }
+
     pub async fn insert_many<T>(&self, data: &Vec<T>) -> Result<PgQueryResult, Error>
     where
         T: serde::Serialize + Table,

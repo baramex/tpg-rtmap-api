@@ -41,6 +41,16 @@ impl ResponseError for StopError {
     }
 }
 
+#[get("/stops")]
+pub async fn get_stops(database: Data<Database>) -> Result<Json<Vec<Stop>>, StopError> {
+    let stops: Option<Vec<Stop>> = database.get_all::<Stop>(Stop::TABLE_NAME).await;
+
+    match stops {
+        Some(stops) => Ok(Json(stops)),
+        None => Err(StopError::StopNotFound),
+    }
+}
+
 #[get("/stop/{id}")]
 pub async fn get_stop(
     identifier: Path<StopIdentifier>,
@@ -53,7 +63,10 @@ pub async fn get_stop(
 
     let stop: Option<Stop> = database
         .get_one::<Stop>(
-            sqlx::query_as::<_, Stop>(format!("SELECT * FROM {} WHERE id=$1", Stop::TABLE_NAME).as_str()).bind(id.unwrap())
+            sqlx::query_as::<_, Stop>(
+                format!("SELECT * FROM {} WHERE id=$1", Stop::TABLE_NAME).as_str(),
+            )
+            .bind(id.unwrap()),
         )
         .await;
 

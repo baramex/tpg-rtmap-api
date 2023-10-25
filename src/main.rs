@@ -6,7 +6,7 @@ use crate::repository::database::Table;
 
 use std::{env, path::Path, str::FromStr};
 
-use api::{line::get_line, stop::get_stop, trip::{get_trip, get_trip_stops, get_trips}};
+use api::{line::get_line, stop::{get_stop, get_stops}, trip::{get_trip, get_trip_stops, get_trips}};
 
 use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 use dotenv::dotenv;
@@ -158,7 +158,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         let db_data: Data<Database> = Data::new(database.clone());
         let logger: Logger = Logger::default();
-        App::new().app_data(db_data).wrap(logger).service(get_line).service(get_stop).service(get_trip).service(get_trip_stops).service(get_trips)
+        App::new().app_data(db_data).wrap(logger).service(get_line).service(get_stop).service(get_stops).service(get_trip).service(get_trip_stops).service(get_trips)
     })
     .bind(("127.0.0.1", 10000))?
     .run()
