@@ -359,6 +359,7 @@ pub struct Line {
     pub color_type: ColorType,
     pub color: String,
 }
+// TODO: Add transport mode (tramway, trolleybus...) ?
 
 #[async_trait]
 impl Table for Line {

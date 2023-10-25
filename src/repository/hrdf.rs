@@ -1,4 +1,4 @@
-use chrono::{NaiveDate, NaiveTime, Timelike};
+use chrono::{NaiveDate, NaiveTime};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::model::{
@@ -336,13 +336,19 @@ impl HRDF {
                 line_id: fahrplan.l.line_number,
                 direction: fahrplan.r.direction,
                 arrival_time: NaiveTime::from_hms_opt(
-                    fahrplan.stops[0].departure_time[1..3].parse().unwrap(),
+                    fahrplan.stops[0].departure_time[1..3]
+                        .parse::<u32>()
+                        .unwrap()
+                        % 24, // TODO: manage trips that are after 00h
                     fahrplan.stops[0].departure_time[3..5].parse().unwrap(),
                     0,
                 )
                 .unwrap(),
                 departure_time: NaiveTime::from_hms_opt(
-                    fahrplan.stops[0].departure_time[1..3].parse().unwrap(),
+                    fahrplan.stops[0].departure_time[1..3]
+                        .parse::<u32>()
+                        .unwrap()
+                        % 24, // TODO: manage trips that are after 00h
                     fahrplan.stops[0].departure_time[3..5].parse().unwrap(),
                     15,
                 )
@@ -375,7 +381,10 @@ impl HRDF {
                     } else {
                         Some(
                             NaiveTime::from_hms_opt(
-                                fahrplan.stops[0].departure_time[1..3].parse().unwrap(),
+                                fahrplan.stops[0].departure_time[1..3]
+                                    .parse::<u32>()
+                                    .unwrap()
+                                    % 24, // TODO: manage trips that are after 00h
                                 fahrplan.stops[0].departure_time[3..5].parse().unwrap(),
                                 0,
                             )
@@ -387,7 +396,10 @@ impl HRDF {
                     } else {
                         Some(
                             NaiveTime::from_hms_opt(
-                                fahrplan.stops[0].departure_time[1..3].parse().unwrap(),
+                                fahrplan.stops[0].departure_time[1..3]
+                                    .parse::<u32>()
+                                    .unwrap()
+                                    % 24, // TODO: manage trips that are after 00h
                                 fahrplan.stops[0].departure_time[3..5].parse().unwrap(),
                                 15,
                             )
