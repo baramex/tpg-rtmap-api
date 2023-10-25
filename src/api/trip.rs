@@ -9,7 +9,7 @@ use actix_web::{
     web::{Json, Query},
     HttpResponse,
 };
-use chrono::{Datelike, NaiveDateTime, TimeZone, Duration, NaiveTime};
+use chrono::{Datelike, Duration, NaiveDateTime, NaiveTime, TimeZone};
 use chrono_tz::Europe::Zurich;
 use derive_more::Display;
 use serde::Deserialize;

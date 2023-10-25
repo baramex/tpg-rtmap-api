@@ -336,7 +336,7 @@ impl HRDF {
                 line_id: fahrplan.l.line_number,
                 direction: fahrplan.r.direction,
                 arrival_time: NaiveTime::from_hms_opt(
-                    fahrplan.stops[0].departure_time[1..3]
+                    fahrplan.stops.last().unwrap().departure_time[1..3]
                         .parse::<u32>()
                         .unwrap()
                         % 24, // TODO: manage trips that are after 00h
@@ -345,7 +345,7 @@ impl HRDF {
                 )
                 .unwrap(),
                 departure_time: NaiveTime::from_hms_opt(
-                    fahrplan.stops[0].departure_time[1..3]
+                    fahrplan.stops.last().unwrap().departure_time[1..3]
                         .parse::<u32>()
                         .unwrap()
                         % 24, // TODO: manage trips that are after 00h
