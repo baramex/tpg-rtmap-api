@@ -2,7 +2,7 @@ use std::any::TypeId;
 use std::ops::Add;
 
 use async_trait::async_trait;
-use chrono::NaiveDate;
+use chrono::{NaiveDate, NaiveTime};
 use log::error;
 use sqlx::postgres::{PgArguments, PgConnectOptions, PgPool, PgPoolOptions, PgQueryResult, PgRow};
 use sqlx::query::QueryAs;
@@ -134,6 +134,9 @@ impl Database {
                     final_query = final_query.bind(n);
                 } else if TypeId::of::<NaiveDate>() == value.type_id() {
                     let n: NaiveDate = *value.downcast::<NaiveDate>().unwrap();
+                    final_query = final_query.bind(n);
+                } else if TypeId::of::<NaiveTime>() == value.type_id() {
+                    let n: NaiveTime = *value.downcast::<NaiveTime>().unwrap();
                     final_query = final_query.bind(n);
                 } else {
                     panic!("Unknown type");
