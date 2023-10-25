@@ -53,8 +53,8 @@ impl Table for TripStop {
             stop_id INTEGER NOT NULL,
             trip_id INTEGER NOT NULL,
             sequence SMALLINT NOT NULL,
-            arrival_time SMALLINT,
-            departure_time SMALLINT,
+            arrival_time TIME,
+            departure_time TIME,
             CONSTRAINT fk_trip
                 FOREIGN KEY(trip_id)
                     REFERENCES trips(id)

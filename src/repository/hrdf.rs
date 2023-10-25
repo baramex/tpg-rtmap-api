@@ -350,7 +350,7 @@ impl HRDF {
                         .unwrap()
                         % 24, // TODO: manage trips that are after 00h
                     fahrplan.stops[0].departure_time[3..5].parse().unwrap(),
-                    15,
+                    0,
                 )
                 .unwrap(),
             };
