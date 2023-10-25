@@ -340,8 +340,7 @@ impl HRDF {
                         .arrival_time
                         .as_str(),
                 )
-                .unwrap(),
-                days: None,
+                .unwrap()
             };
 
             trips.push(trip);

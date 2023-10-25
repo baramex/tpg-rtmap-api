@@ -1,5 +1,3 @@
-use std::{env, time::Instant};
-
 use actix_web::{
     error::ResponseError,
     get,
@@ -9,15 +7,13 @@ use actix_web::{
     web::{Json, Query},
     HttpResponse,
 };
-use chrono::{DateTime, NaiveDateTime, Timelike, Utc};
+use chrono::{NaiveDateTime, TimeZone, Timelike, Datelike};
+use chrono_tz::Europe::Zurich;
 use derive_more::Display;
 use serde::Deserialize;
-use sqlx::{Postgres, QueryBuilder};
 
 use crate::{
-    model::{
-        bitfield::Bitfield, information::Information, trip::Trip, trip_stop::TripStop, types::Hour,
-    },
+    model::{information::Information, trip::Trip, trip_stop::TripStop, types::Hour},
     repository::database::{Database, Table},
 };
 
@@ -29,6 +25,7 @@ pub struct TripIdentifier {
 #[derive(Deserialize)]
 pub struct TripSelector {
     timestamp: i64,
+    bounds: Option<i16>,
 }
 
 #[derive(Debug, Display)]
@@ -36,6 +33,7 @@ pub enum TripError {
     TripNotFound,
     BadTripRequest,
     InvalidTimePeriod,
+    InvalidBounds
 }
 
 impl ResponseError for TripError {
@@ -48,8 +46,7 @@ impl ResponseError for TripError {
     fn status_code(&self) -> StatusCode {
         match self {
             TripError::TripNotFound => StatusCode::NOT_FOUND,
-            TripError::BadTripRequest => StatusCode::BAD_REQUEST,
-            TripError::InvalidTimePeriod => StatusCode::BAD_REQUEST,
+            _ => StatusCode::BAD_REQUEST,
         }
     }
 }
@@ -66,7 +63,12 @@ pub async fn get_trips(
         return Err(TripError::BadTripRequest);
     }
 
-    let date: DateTime<Utc> = DateTime::from_utc(naive_date.unwrap(), Utc);
+    let bounds: i16 = info.bounds.unwrap_or(0);
+    if bounds > 24 || bounds < 0 {
+        return Err(TripError::InvalidBounds);
+    }
+
+    let date = Zurich.from_utc_datetime(&naive_date.unwrap());
     let information: Information = database
         .get_one::<Information>(sqlx::query_as::<_, Information>(
             format!("SELECT * FROM {}", Information::TABLE_NAME).as_str(),
@@ -74,12 +76,10 @@ pub async fn get_trips(
         .await
         .unwrap();
 
-    let start_datetime: DateTime<Utc> =
-        DateTime::from_utc(information.start_date.and_hms_opt(0, 0, 0).unwrap(), Utc);
-    let end_datetime: DateTime<Utc> =
-        DateTime::from_utc(information.end_date.and_hms_opt(23, 59, 59).unwrap(), Utc);
-
-    // TODO: change offset to zurich's timezone
+    let start_datetime =
+        Zurich.with_ymd_and_hms(information.start_date.year(), information.start_date.month(), information.start_date.day(), 0, 0, 0).unwrap();
+    let end_datetime =
+        Zurich.with_ymd_and_hms(information.end_date.year(), information.end_date.month(), information.end_date.day(), 23, 59, 59).unwrap();
 
     if date.lt(&start_datetime) || date.gt(&end_datetime) {
         return Err(TripError::InvalidTimePeriod);
@@ -94,7 +94,7 @@ pub async fn get_trips(
     let bitfield_number: i16 = day_number + 2;
 
     let trips: Option<Vec<Trip>> = database
-        .get_many::<Trip>(sqlx::query_as::<_, Trip>(format!("SELECT * FROM {} JOIN bitfields ON bitfield_id = bitfields.id WHERE departure_time <= $1 AND arrival_time >= $1 AND SUBSTRING(days,$2,1) = '1'", Trip::TABLE_NAME).as_str()).bind(hour.value()).bind(bitfield_number+1))
+        .get_many::<Trip>(sqlx::query_as::<_, Trip>(format!("SELECT * FROM {} JOIN bitfields ON bitfield_id = bitfields.id WHERE departure_time <= $1 AND arrival_time >= $2 AND SUBSTRING(days,$3,1) = '1'", Trip::TABLE_NAME).as_str()).bind(hour.value() + bounds).bind(hour.value() - bounds).bind(bitfield_number+1))
         .await;
 
     match trips {

@@ -22,8 +22,7 @@ pub struct Trip {
     #[sqlx(try_from = "i16")]
     pub departure_time: Hour,
     #[sqlx(try_from = "i16")]
-    pub arrival_time: Hour,
-    pub days: Option<String>
+    pub arrival_time: Hour
 }
 
 #[async_trait]
