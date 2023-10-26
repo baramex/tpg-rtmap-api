@@ -9,7 +9,7 @@ use actix_web::{
     web::{Json, Query},
     HttpResponse,
 };
-use chrono::{Datelike, Duration, NaiveDateTime, NaiveTime, TimeZone};
+use chrono::{naive, DateTime, Datelike, Duration, NaiveDateTime, NaiveTime, TimeZone};
 use chrono_tz::Europe::Zurich;
 use derive_more::Display;
 use serde::Deserialize;
@@ -29,6 +29,7 @@ pub struct TripIdentifier {
 pub struct TripSelector {
     timestamp: i64,
     bounds: Option<i16>,
+    from: Option<i64>,
 }
 
 #[derive(Debug, Display)]
@@ -71,6 +72,8 @@ pub async fn get_trips(
         return Err(TripError::InvalidBounds);
     }
 
+    let from: Option<i64> = info.from;
+
     let date = Zurich.from_utc_datetime(&naive_date.unwrap());
     let information: Information = database
         .get_one::<Information>(sqlx::query_as::<_, Information>(
@@ -104,6 +107,19 @@ pub async fn get_trips(
         return Err(TripError::InvalidTimePeriod);
     }
 
+    let mut date_from = start_datetime;
+    if from.is_some() {
+        let naive_from: Option<NaiveDateTime> = NaiveDateTime::from_timestamp_opt(from.unwrap(), 0);
+        if naive_from.is_none() {
+            return Err(TripError::BadTripRequest);
+        }
+
+        date_from = Zurich.from_utc_datetime(&naive_from.unwrap());
+        if date_from.lt(&start_datetime) || date_from.gt(&end_datetime) {
+            return Err(TripError::InvalidTimePeriod);
+        }
+    }
+
     let mut upper_time_bound: NaiveTime = date.time();
     upper_time_bound.add_assign(Duration::minutes(bounds as i64));
     let mut lower_time_bound: NaiveTime = date.time();
@@ -113,9 +129,8 @@ pub async fn get_trips(
     let bitfield_number: i16 = day_number + 2;
 
     // TODO: manage trips that are after 00h
-    let trips: Option<Vec<Trip>> = database
-        .get_many::<Trip>(sqlx::query_as::<_, Trip>(format!("SELECT trips.id, trips.journey_number, trips.option_count, trips.transport_mode, trips.origin_id, trips.destination_id, trips.bitfield_id, trips.line_id, trips.direction, trips.departure_time, trips.arrival_time FROM {} JOIN bitfields ON bitfield_id = bitfields.id WHERE departure_time <= $1 AND arrival_time >= $2 AND SUBSTRING(days,$3,1) = '1'", Trip::TABLE_NAME).as_str()).bind(upper_time_bound).bind(lower_time_bound).bind(bitfield_number+1))
-        .await;
+
+    let trips: Option<Vec<Trip>> = database.get_many::<Trip>(sqlx::query_as::<_, Trip>(format!("SELECT trips.id, trips.journey_number, trips.option_count, trips.transport_mode, trips.origin_id, trips.destination_id, trips.bitfield_id, trips.line_id, trips.direction, trips.departure_time, trips.arrival_time FROM {} JOIN bitfields ON bitfield_id = bitfields.id WHERE departure_time <= $1 AND departure_time >= $4 AND arrival_time >= $2 AND SUBSTRING(days,$3,1) = '1'", Trip::TABLE_NAME).as_str()).bind(upper_time_bound).bind(lower_time_bound).bind(bitfield_number+1).bind(date_from.time())).await;
 
     match trips {
         Some(trips) => Ok(Json(trips)),
