@@ -84,7 +84,7 @@ async fn main() -> std::io::Result<()> {
 
     let insert_bitfields = false;
     let insert_lines = false;
-    let insert_stops = false;
+    let insert_stops = true;
     let insert_trips = false;
     let insert_trip_stops = false;
     let insert_information = false;

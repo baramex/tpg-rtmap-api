@@ -133,8 +133,8 @@ define_record! {
 define_record! {
     RawStop {
         id: i32 => 0 => 7,
-        lat: f64 => 10 => 18,
-        lon: f64 => 20 => 29,
+        lon: f64 => 10 => 18,
+        lat: f64 => 20 => 29,
         name: String => 39 => 90,
     }
 }
