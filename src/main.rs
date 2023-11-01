@@ -71,11 +71,12 @@ async fn main() -> std::io::Result<()> {
     let _ = Bitfield::create_table(&database).await;
     let _ = Line::create_table(&database).await;
     let _ = Stop::create_table(&database).await;
+    let _ = Shape::create_table(&database).await;
     let _ = Trip::create_table(&database).await;
     let _ = TripStop::create_table(&database).await;
     let _ = Information::create_table(&database).await;
-    let _ = ShapePoint::create_table(&database).await;
     let _ = ShapeStop::create_table(&database).await;
+    let _ = ShapePoint::create_table(&database).await;
 
     // retrieve data from hrdf and insert into database
     let hrdf: HRDF = HRDF {
@@ -90,7 +91,7 @@ async fn main() -> std::io::Result<()> {
     let insert_trips = true;
     let insert_trip_stops = true;
     let insert_information = false;
-    let insert_shapes = true;
+    let insert_shapes = false;
     let insert_shape_points = true;
 
     let mut fahrplans: Vec<Fahrplan> = Vec::new();

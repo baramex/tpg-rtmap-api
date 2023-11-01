@@ -6,15 +6,15 @@ use crate::repository::database::{Database, Table};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RoadResponse {
-    pub snapped_points: Vec<SnappedPoint>,
-    pub warning_message: String
+    pub snappedPoints: Vec<SnappedPoint>,
+    pub warningMessage: Option<String>
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SnappedPoint {
     pub location: Location,
-    pub original_index: Option<i32>,
-    pub place_id: String
+    pub originalIndex: Option<i32>,
+    pub placeId: String
 }
 
 #[derive(Debug, Deserialize, Serialize)]

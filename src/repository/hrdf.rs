@@ -436,7 +436,7 @@ impl HRDF {
 
             let res: Response = reqwest::get(format!("https://roads.googleapis.com/v1/snapToRoads?interpolate=true&key={}&path={}", "***REMOVED***", path)).await.unwrap();
             if res.status().is_success() {
-                let snapped_points: Vec<SnappedPoint> = res.json::<RoadResponse>().await.unwrap().snapped_points;
+                let snapped_points: Vec<SnappedPoint> = res.json::<RoadResponse>().await.unwrap().snappedPoints;
 
                 let mut j: i16 = 1;
                 for snapped_point in snapped_points {
@@ -446,8 +446,8 @@ impl HRDF {
                         sequence: j,
                         latitude: snapped_point.location.latitude,
                         longitude: snapped_point.location.longitude,
-                        shape_stop_id: if snapped_point.original_index.is_some() {
-                            Some(shape_stops[snapped_point.original_index.unwrap() as usize].id)
+                        shape_stop_id: if snapped_point.originalIndex.is_some() {
+                            Some(shape_stops[snapped_point.originalIndex.unwrap() as usize].id)
                         } else {
                             None
                         },
