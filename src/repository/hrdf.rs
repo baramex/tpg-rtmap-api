@@ -332,7 +332,7 @@ impl HRDF {
         let mut i: i32 = 1;
 
         let mut shapes: Vec<Shape> = Vec::new();
-        let mut si: i32 = 1;
+        let mut si: i32 = 0;
 
         let mut shape_stops: Vec<ShapeStop> = Vec::new();
         let mut ssi: i32 = 1;
@@ -351,6 +351,7 @@ impl HRDF {
                 .join("");
 
             if !shapes.iter().any(|shape| shape.identifier == identifier) {
+                si += 1;
                 let shape: Shape = Shape { id: si, identifier };
 
                 let mut y = 1;
@@ -368,7 +369,6 @@ impl HRDF {
                 }
 
                 shapes.push(shape);
-                si += 1;
             }
 
             let trip: Trip = Trip {

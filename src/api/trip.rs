@@ -133,7 +133,7 @@ pub async fn get_trips(
 
     // TODO: manage trips that are after 00h
 
-    let trips: Option<Vec<Trip>> = database.get_many::<Trip>(sqlx::query_as::<_, Trip>(format!("SELECT trips.id, trips.journey_number, trips.option_count, trips.transport_mode, trips.origin_id, trips.destination_id, trips.bitfield_id, trips.line_id, trips.direction, trips.departure_time, trips.arrival_time FROM {} JOIN bitfields ON bitfield_id = bitfields.id WHERE departure_time <= $1 AND departure_time >= $4 AND arrival_time >= $2 AND SUBSTRING(days,$3,1) = '1'", Trip::TABLE_NAME).as_str()).bind(upper_time_bound).bind(lower_time_bound).bind(bitfield_number+1).bind(date_from.time())).await;
+    let trips: Option<Vec<Trip>> = database.get_many::<Trip>(sqlx::query_as::<_, Trip>(format!("SELECT trips.id, trips.journey_number, trips.option_count, trips.shape_id, trips.transport_mode, trips.origin_id, trips.destination_id, trips.bitfield_id, trips.line_id, trips.direction, trips.departure_time, trips.arrival_time FROM {} JOIN bitfields ON bitfield_id = bitfields.id WHERE departure_time <= $1 AND departure_time >= $4 AND arrival_time >= $2 AND SUBSTRING(days,$3,1) = '1'", Trip::TABLE_NAME).as_str()).bind(upper_time_bound).bind(lower_time_bound).bind(bitfield_number+1).bind(date_from.time())).await;
 
     match trips {
         Some(trips) => Ok(Json(trips)),
@@ -197,7 +197,7 @@ pub struct ShapeResponse {
     stops: Vec<ShapeStop>,
 }
 
-#[get("/trips/{id}/shape")]
+#[get("/trip/{id}/shape")]
 pub async fn get_trip_shape(
     identifier: Path<TripIdentifier>,
     database: Data<Database>,
