@@ -22,3 +22,4 @@ unicode-segmentation = "1.10.1"
 async-trait = "0.1.73"
 chrono-tz = "0.8.3"
 actix-cors = "0.6.4"
+reqwest = { version = "0.11.22", features = ["json"] }

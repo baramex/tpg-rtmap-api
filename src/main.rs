@@ -16,9 +16,8 @@ use actix_cors::Cors;
 use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 use dotenv::dotenv;
 use model::{
-    bitfield::Bitfield, information::Information, line::Line, shape_point::ShapePoint,
-    shape_stop::ShapeStop, stop::Stop, trip::Trip, trip_stop::TripStop,
-    shape::Shape,
+    bitfield::Bitfield, information::Information, line::Line, shape::Shape,
+    shape_point::ShapePoint, shape_stop::ShapeStop, stop::Stop, trip::Trip, trip_stop::TripStop,
 };
 use repository::{
     database::Database,
@@ -88,12 +87,14 @@ async fn main() -> std::io::Result<()> {
     let insert_bitfields = false;
     let insert_lines = false;
     let insert_stops = false;
-    let insert_trips = false;
-    let insert_trip_stops = false;
+    let insert_trips = true;
+    let insert_trip_stops = true;
     let insert_information = false;
     let insert_shapes = true;
+    let insert_shape_points = true;
 
     let mut fahrplans: Vec<Fahrplan> = Vec::new();
+    let mut stops: Vec<Stop> = Vec::new();
 
     if insert_lines {
         println!("Getting lines...");
@@ -144,10 +145,10 @@ async fn main() -> std::io::Result<()> {
         println!("Inserted bitfields");
     }
 
-    if insert_stops {
+    if insert_stops || insert_shape_points {
         println!("Getting stops...");
         let stops_id: Vec<i32> = hrdf.extract_stop_ids(&fahrplans);
-        let stops: Vec<Stop> = hrdf.retrieve_stops(stops_id).unwrap();
+        stops = hrdf.retrieve_stops(stops_id).unwrap();
         println!("Got stops: {}", stops.len());
 
         println!("Inserting stops...");
@@ -155,7 +156,7 @@ async fn main() -> std::io::Result<()> {
         println!("Inserted stops");
     }
 
-    if insert_trips || insert_shapes {
+    if insert_trips || insert_shapes || insert_shape_points {
         println!("Getting trips and shapes...");
         let result = hrdf.to_trips_and_shapes_and_shape_stops(&fahrplans);
         let trips: Vec<Trip> = result.0;
@@ -174,10 +175,20 @@ async fn main() -> std::io::Result<()> {
             println!("Inserting shapes...");
             let _s = Database::insert_many::<Shape>(&database, &shapes).await;
             println!("Inserted shapes");
-            
+
             println!("Inserting shape stops...");
             let _ss = Database::insert_many::<ShapeStop>(&database, &shape_stops).await;
             println!("Inserted shape stops");
+        }
+        if insert_shape_points {
+            println!("Getting shape points...");
+            let shape_points: Vec<ShapePoint> =
+                hrdf.fetch_shape_points(&shapes, &shape_stops, &stops).await;
+            println!("Got shape points: {}", shape_points.len());
+
+            println!("Inserting shape points...");
+            let _sp = Database::insert_many::<ShapePoint>(&database, &shape_points).await;
+            println!("Inserted shape points");
         }
     }
 

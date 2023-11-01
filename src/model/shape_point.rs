@@ -1,8 +1,27 @@
 use async_trait::async_trait;
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 use sqlx::{postgres::PgQueryResult, Error, FromRow};
 
 use crate::repository::database::{Database, Table};
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct RoadResponse {
+    pub snapped_points: Vec<SnappedPoint>,
+    pub warning_message: String
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SnappedPoint {
+    pub location: Location,
+    pub original_index: Option<i32>,
+    pub place_id: String
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Location {
+    pub latitude: f64,
+    pub longitude: f64,
+}
 
 #[derive(Serialize, FromRow, Debug)]
 pub struct ShapePoint {

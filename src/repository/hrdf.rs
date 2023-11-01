@@ -1,14 +1,17 @@
 use chrono::{NaiveDate, NaiveTime};
+use reqwest::Response;
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::model::{
     bitfield::Bitfield,
     line::{Line, TransportMode},
     shape::Shape,
+    shape_point::{ShapePoint, RoadResponse, SnappedPoint},
+    shape_stop::ShapeStop,
     stop::Stop,
     trip::Trip,
     trip_stop::TripStop,
-    types::{ColorType, Direction}, shape_stop::ShapeStop,
+    types::{ColorType, Direction},
 };
 use std::{
     cmp,
@@ -321,7 +324,10 @@ impl HRDF {
         return stop_ids;
     }
 
-    pub fn to_trips_and_shapes_and_shape_stops(&self, fahrplans: &Vec<Fahrplan>) -> (Vec<Trip>, Vec<Shape>, Vec<ShapeStop>) {
+    pub fn to_trips_and_shapes_and_shape_stops(
+        &self,
+        fahrplans: &Vec<Fahrplan>,
+    ) -> (Vec<Trip>, Vec<Shape>, Vec<ShapeStop>) {
         let mut trips: Vec<Trip> = Vec::new();
         let mut i: i32 = 1;
 
@@ -345,10 +351,7 @@ impl HRDF {
                 .join("");
 
             if !shapes.iter().any(|shape| shape.identifier == identifier) {
-                let shape: Shape = Shape {
-                    id: si,
-                    identifier
-                };
+                let shape: Shape = Shape { id: si, identifier };
 
                 let mut y = 1;
                 for stop in &fahrplan.stops {
@@ -406,6 +409,58 @@ impl HRDF {
         }
 
         return (trips, shapes, shape_stops);
+    }
+
+    pub async fn fetch_shape_points(
+        &self,
+        shapes: &Vec<Shape>,
+        shape_stops: &Vec<ShapeStop>,
+        stops: &Vec<Stop>,
+    ) -> Vec<ShapePoint> {
+        let mut shape_points: Vec<ShapePoint> = Vec::new();
+        let mut i = 1;
+
+        for shape in shapes {
+            let shape_stops: Vec<&ShapeStop> = shape_stops
+                .iter()
+                .filter(|shape_stop| shape_stop.shape_id == shape.id)
+                .collect::<Vec<&ShapeStop>>();
+            let path = shape_stops
+                .iter()
+                .map(|shape_stop| {
+                    let stop = stops.iter().find(|s| s.id == shape_stop.stop_id).unwrap();
+                    stop.latitude.to_string() + "," + stop.longitude.to_string().as_str()
+                })
+                .collect::<Vec<String>>()
+                .join("|");
+
+            let res: Response = reqwest::get(format!("https://roads.googleapis.com/v1/snapToRoads?interpolate=true&key={}&path={}", "***REMOVED***", path)).await.unwrap();
+            if res.status().is_success() {
+                let snapped_points: Vec<SnappedPoint> = res.json::<RoadResponse>().await.unwrap().snapped_points;
+
+                let mut j: i16 = 1;
+                for snapped_point in snapped_points {
+                    let shape_point: ShapePoint = ShapePoint {
+                        id: i,
+                        shape_id: shape.id,
+                        sequence: j,
+                        latitude: snapped_point.location.latitude,
+                        longitude: snapped_point.location.longitude,
+                        shape_stop_id: if snapped_point.original_index.is_some() {
+                            Some(shape_stops[snapped_point.original_index.unwrap() as usize].id)
+                        } else {
+                            None
+                        },
+                    };
+
+                    shape_points.push(shape_point);
+                    j += 1;
+                }
+            }
+            i += 1;
+        }
+
+        return shape_points;
     }
 
     pub fn to_trip_stops(&self, fahrplans: &Vec<Fahrplan>) -> Vec<TripStop> {
