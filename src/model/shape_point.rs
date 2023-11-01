@@ -67,9 +67,6 @@ impl Table for ShapePoint {
             latitude DOUBLE PRECISION NOT NULL,
             longitude DOUBLE PRECISION NOT NULL,
             shape_stop_id INTEGER,
-            CONSTRAINT fk_shape_stop
-                FOREIGN KEY(shape_stop_id)
-                    REFERENCES shape_stops(id),
             CONSTRAINT fk_shape
                 FOREIGN KEY(shape_id)
                     REFERENCES shapes(id)

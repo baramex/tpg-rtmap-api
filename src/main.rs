@@ -91,7 +91,7 @@ async fn main() -> std::io::Result<()> {
     let insert_trips = true;
     let insert_trip_stops = true;
     let insert_information = false;
-    let insert_shapes = false;
+    let insert_shapes = true;
     let insert_shape_points = true;
 
     let mut fahrplans: Vec<Fahrplan> = Vec::new();
@@ -167,11 +167,6 @@ async fn main() -> std::io::Result<()> {
         println!("Got shapes: {}", shapes.len());
         println!("Got shape stops: {}", shape_stops.len());
 
-        if insert_trips {
-            println!("Inserting trips...");
-            let _t = Database::insert_many::<Trip>(&database, &trips).await;
-            println!("Inserted trips");
-        }
         if insert_shapes {
             println!("Inserting shapes...");
             let _s = Database::insert_many::<Shape>(&database, &shapes).await;
@@ -180,6 +175,11 @@ async fn main() -> std::io::Result<()> {
             println!("Inserting shape stops...");
             let _ss = Database::insert_many::<ShapeStop>(&database, &shape_stops).await;
             println!("Inserted shape stops");
+        }
+        if insert_trips {
+            println!("Inserting trips...");
+            let _t = Database::insert_many::<Trip>(&database, &trips).await;
+            println!("Inserted trips");
         }
         if insert_shape_points {
             println!("Getting shape points...");

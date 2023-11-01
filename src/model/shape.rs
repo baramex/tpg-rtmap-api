@@ -31,7 +31,7 @@ impl Table for Shape {
                 format!(
                     "CREATE TABLE IF NOT EXISTS {} (
             id INTEGER PRIMARY KEY,
-            identifier VARCHAR(512) NOT NULL
+            identifier VARCHAR(1024) NOT NULL
         )",
                     Self::TABLE_NAME
                 )

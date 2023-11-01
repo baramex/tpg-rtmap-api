@@ -455,9 +455,9 @@ impl HRDF {
 
                     shape_points.push(shape_point);
                     j += 1;
+                    i += 1;
                 }
             }
-            i += 1;
         }
 
         return shape_points;
