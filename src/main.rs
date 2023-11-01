@@ -9,7 +9,7 @@ use std::{env, path::Path, str::FromStr};
 use api::{
     line::{get_line, get_lines},
     stop::{get_stop, get_stops},
-    trip::{get_trip, get_trip_stops, get_trips},
+    trip::{get_trip, get_trip_shape, get_trip_stops, get_trips},
 };
 
 use actix_cors::Cors;
@@ -88,11 +88,11 @@ async fn main() -> std::io::Result<()> {
     let insert_bitfields = false;
     let insert_lines = false;
     let insert_stops = false;
-    let insert_trips = true;
-    let insert_trip_stops = true;
+    let insert_trips = false;
+    let insert_trip_stops = false;
     let insert_information = false;
-    let insert_shapes = true;
-    let insert_shape_points = true;
+    let insert_shapes = false;
+    let insert_shape_points = false;
 
     let mut fahrplans: Vec<Fahrplan> = Vec::new();
     let mut stops: Vec<Stop> = Vec::new();
@@ -224,6 +224,7 @@ async fn main() -> std::io::Result<()> {
             .service(get_trip)
             .service(get_trip_stops)
             .service(get_trips)
+            .service(get_trip_shape)
     })
     .bind(("127.0.0.1", 10000))?
     .run()
