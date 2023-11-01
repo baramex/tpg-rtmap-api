@@ -4,10 +4,11 @@ use unicode_segmentation::UnicodeSegmentation;
 use crate::model::{
     bitfield::Bitfield,
     line::{Line, TransportMode},
+    shape::Shape,
     stop::Stop,
     trip::Trip,
     trip_stop::TripStop,
-    types::{ColorType, Direction},
+    types::{ColorType, Direction}, shape_stop::ShapeStop,
 };
 use std::{
     cmp,
@@ -320,15 +321,58 @@ impl HRDF {
         return stop_ids;
     }
 
-    pub fn to_trips(&self, fahrplans: &Vec<Fahrplan>) -> Vec<Trip> {
+    pub fn to_trips_and_shapes_and_shape_stops(&self, fahrplans: &Vec<Fahrplan>) -> (Vec<Trip>, Vec<Shape>, Vec<ShapeStop>) {
         let mut trips: Vec<Trip> = Vec::new();
         let mut i: i32 = 1;
 
+        let mut shapes: Vec<Shape> = Vec::new();
+        let mut si: i32 = 1;
+
+        let mut shape_stops: Vec<ShapeStop> = Vec::new();
+        let mut ssi: i32 = 1;
+
         for fahrplan in fahrplans {
+            let mut j: i16 = 1;
+
+            let identifier = fahrplan
+                .stops
+                .iter()
+                .map(|stop| {
+                    j += 1;
+                    j.to_string() + stop.id.to_string().as_str()
+                })
+                .collect::<Vec<String>>()
+                .join("");
+
+            if !shapes.iter().any(|shape| shape.identifier == identifier) {
+                let shape: Shape = Shape {
+                    id: si,
+                    identifier
+                };
+
+                let mut y = 1;
+                for stop in &fahrplan.stops {
+                    let shape_stop: ShapeStop = ShapeStop {
+                        id: ssi,
+                        shape_id: si,
+                        stop_id: stop.id,
+                        sequence: y,
+                    };
+
+                    shape_stops.push(shape_stop);
+                    y += 1;
+                    ssi += 1;
+                }
+
+                shapes.push(shape);
+                si += 1;
+            }
+
             let trip: Trip = Trip {
                 id: i,
                 journey_number: fahrplan.z.journey_number,
                 option_count: fahrplan.z.option_count,
+                shape_id: si,
                 transport_mode: fahrplan.g.transport_mode,
                 origin_id: fahrplan.g.origin_id,
                 destination_id: fahrplan.g.destination_id,
@@ -361,7 +405,7 @@ impl HRDF {
             i += 1;
         }
 
-        return trips;
+        return (trips, shapes, shape_stops);
     }
 
     pub fn to_trip_stops(&self, fahrplans: &Vec<Fahrplan>) -> Vec<TripStop> {

@@ -5,3 +5,6 @@ pub mod bitfield;
 pub mod trip;
 pub mod trip_stop;
 pub mod information;
+pub mod shape_point;
+pub mod shape_stop;
+pub mod shape;
