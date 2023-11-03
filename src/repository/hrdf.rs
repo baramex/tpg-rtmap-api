@@ -6,7 +6,7 @@ use crate::model::{
     bitfield::Bitfield,
     line::{Line, TransportMode},
     shape::Shape,
-    shape_point::{ShapePoint, RoadResponse, SnappedPoint},
+    shape_point::{RoadResponse, ShapePoint, SnappedPoint},
     shape_stop::ShapeStop,
     stop::Stop,
     trip::Trip,
@@ -338,7 +338,7 @@ impl HRDF {
         let mut ssi: i32 = 1;
 
         for fahrplan in fahrplans {
-            let mut j: i16 = 1;
+            let mut j: i16 = 0;
 
             let identifier = fahrplan
                 .stops
@@ -350,9 +350,11 @@ impl HRDF {
                 .collect::<Vec<String>>()
                 .join("");
 
-            if !shapes.iter().any(|shape| shape.identifier == identifier) {
+            let mut shape: Option<&Shape> =
+                shapes.iter().find(|shape| shape.identifier == identifier);
+            if shape.is_none() {
                 si += 1;
-                let shape: Shape = Shape { id: si, identifier };
+                let temp_shape = Shape { id: si, identifier };
 
                 let mut y = 1;
                 for stop in &fahrplan.stops {
@@ -368,14 +370,15 @@ impl HRDF {
                     ssi += 1;
                 }
 
-                shapes.push(shape);
+                shapes.push(temp_shape);
+                shape = Some(shapes.last().unwrap());
             }
 
             let trip: Trip = Trip {
                 id: i,
                 journey_number: fahrplan.z.journey_number,
                 option_count: fahrplan.z.option_count,
-                shape_id: si,
+                shape_id: shape.unwrap().id,
                 transport_mode: fahrplan.g.transport_mode,
                 origin_id: fahrplan.g.origin_id,
                 destination_id: fahrplan.g.destination_id,
@@ -434,9 +437,15 @@ impl HRDF {
                 .collect::<Vec<String>>()
                 .join("|");
 
-            let res: Response = reqwest::get(format!("https://roads.googleapis.com/v1/snapToRoads?interpolate=true&key={}&path={}", "***REMOVED***", path)).await.unwrap();
+            let res: Response = reqwest::get(format!(
+                "https://roads.googleapis.com/v1/snapToRoads?interpolate=true&key={}&path={}",
+                "***REMOVED***", path
+            ))
+            .await
+            .unwrap();
             if res.status().is_success() {
-                let snapped_points: Vec<SnappedPoint> = res.json::<RoadResponse>().await.unwrap().snappedPoints;
+                let snapped_points: Vec<SnappedPoint> =
+                    res.json::<RoadResponse>().await.unwrap().snappedPoints;
 
                 let mut j: i16 = 1;
                 for snapped_point in snapped_points {
