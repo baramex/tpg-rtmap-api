@@ -7,7 +7,7 @@ use sqlx::{postgres::PgQueryResult, Error, FromRow};
 
 use crate::repository::database::{Database, Table};
 
-#[derive(Serialize, FromRow, Debug)]
+#[derive(Serialize, FromRow, Debug, Clone)]
 pub struct TripStop {
     pub id: i32,
     pub stop_id: i32,

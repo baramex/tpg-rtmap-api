@@ -8,15 +8,13 @@ use crate::repository::database::{Database, Table};
 pub struct LegStep {
     pub id: i32,
     pub leg_id: i32,
-    pub distance: f64,
+    pub distance: i32,
     pub duration: i32,
     pub sequence: i16,
     pub start_lat: f64,
     pub start_lng: f64,
     pub end_lat: f64,
-    pub end_lng: f64,
-    pub polyline_lat: f64,
-    pub polyline_lng: f64
+    pub end_lng: f64
 }
 
 #[async_trait]
@@ -33,14 +31,12 @@ impl Table for LegStep {
             Box::new(self.start_lat),
             Box::new(self.start_lng),
             Box::new(self.end_lat),
-            Box::new(self.end_lng),
-            Box::new(self.polyline_lat),
-            Box::new(self.polyline_lng)
+            Box::new(self.end_lng)
         ]
     }
 
     fn keys() -> String {
-        return "(id,leg_id,distance,duration,sequence,start_lat,start_lng,end_lat,end_lng,polyline_lat,polyline_lng)".to_string();
+        return "(id,leg_id,distance,duration,sequence,start_lat,start_lng,end_lat,end_lng)".to_string();
     }
 
     async fn create_table(database: &Database) -> Result<PgQueryResult, Error> {
@@ -57,8 +53,6 @@ impl Table for LegStep {
             start_lng DOUBLE PRECISION NOT NULL,
             end_lat DOUBLE PRECISION NOT NULL,
             end_lng DOUBLE PRECISION NOT NULL,
-            polyline_lat DOUBLE PRECISION NOT NULL,
-            polyline_lng DOUBLE PRECISION NOT NULL,
             CONSTRAINT fk_step
                 FOREIGN KEY(step_id)
                     REFERENCES steps(id)

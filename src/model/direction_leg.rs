@@ -8,7 +8,7 @@ use crate::repository::database::{Database, Table};
 pub struct DirectionLeg {
     pub id: i32,
     pub direction_id: i32,
-    pub distance: f64,
+    pub distance: i32,
     pub duration: i32,
     pub sequence: i16,
     pub origin_id: i32,

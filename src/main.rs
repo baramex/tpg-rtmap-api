@@ -18,7 +18,7 @@ use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 use dotenv::dotenv;
 use model::{
     bitfield::Bitfield, information::Information, line::Line, shape::Shape,
-    shape_point::ShapePoint, shape_stop::ShapeStop, stop::Stop, trip::Trip, trip_stop::TripStop,
+    shape_point::ShapePoint, shape_stop::ShapeStop, stop::Stop, trip::Trip, trip_stop::TripStop, direction::Direction, direction_leg::DirectionLeg, leg_step::LegStep,
 };
 use repository::{
     database::Database,
@@ -78,6 +78,9 @@ async fn main() -> std::io::Result<()> {
     let _ = Information::create_table(&database).await;
     let _ = ShapeStop::create_table(&database).await;
     let _ = ShapePoint::create_table(&database).await;
+    let _ = Direction::create_table(&database).await;
+    let _ = DirectionLeg::create_table(&database).await;
+    let _ = LegStep::create_table(&database).await;
 
     // retrieve data from hrdf and insert into database
     let hrdf: HRDF = HRDF {
