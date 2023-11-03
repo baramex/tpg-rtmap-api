@@ -8,3 +8,7 @@ pub mod information;
 pub mod shape_point;
 pub mod shape_stop;
 pub mod shape;
+pub mod direction;
+pub mod direction_leg;
+pub mod leg_step;
+pub mod step_path;
