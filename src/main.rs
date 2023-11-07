@@ -22,7 +22,7 @@ use model::{
 };
 use repository::{
     database::Database,
-    hrdf::{CornerDates, Fahrplan, HRDF},
+    hrdf::{CornerDates, Fahrplan, HRDF}, maps::Maps,
 };
 use sqlx::{
     postgres::{PgConnectOptions, PgPoolOptions},
@@ -89,12 +89,18 @@ async fn main() -> std::io::Result<()> {
         agency_id: env::var("AGENCY_ID").unwrap().parse::<String>().unwrap(),
     };
 
+    let maps = Maps {
+        api_key: env::var("MAPS_API_KEY").unwrap().parse::<String>().unwrap(),
+    };
+
     let insert_bitfields = false;
     let insert_lines = false;
     let insert_stops = false;
 
     let insert_trips = false;
     let insert_trip_stops = false;
+
+    let insert_directions = false;
 
     let insert_shapes = false;
     let insert_shape_points = false;
@@ -103,6 +109,7 @@ async fn main() -> std::io::Result<()> {
 
     let mut fahrplans: Vec<Fahrplan> = Vec::new();
     let mut stops: Vec<Stop> = Vec::new();
+    let mut trip_stops: Vec<TripStop> = Vec::new();
 
     if insert_lines {
         println!("Getting lines...");
@@ -153,7 +160,7 @@ async fn main() -> std::io::Result<()> {
         println!("Inserted bitfields");
     }
 
-    if insert_stops || insert_shape_points {
+    if insert_stops || insert_shape_points || insert_directions {
         println!("Getting stops...");
         let stops_id: Vec<i32> = hrdf.extract_stop_ids(&fahrplans);
         stops = hrdf.retrieve_stops(stops_id).unwrap();
@@ -164,7 +171,13 @@ async fn main() -> std::io::Result<()> {
         println!("Inserted stops");
     }
 
-    if insert_trips || insert_shapes || insert_shape_points {
+    if insert_trip_stops || insert_directions {
+        println!("Getting trip stops...");
+        trip_stops = hrdf.to_trip_stops(&fahrplans);
+        println!("Got trip stops: {}", trip_stops.len());
+    }
+
+    if insert_trips && (insert_shapes || insert_shape_points) {
         println!("Getting trips and shapes...");
         let result = hrdf.to_trips_and_shapes_and_shape_stops(&fahrplans);
         let trips: Vec<Trip> = result.0;
@@ -189,22 +202,55 @@ async fn main() -> std::io::Result<()> {
             println!("Inserted trips");
         }
         if insert_shape_points {
-            println!("Getting shape points...");
+            // TO REDO (use maps.get_shape_points_from_shape_stops)
+            /*println!("Getting shape points...");
             let shape_points: Vec<ShapePoint> =
                 hrdf.fetch_shape_points(&shapes, &shape_stops, &stops).await;
             println!("Got shape points: {}", shape_points.len());
 
             println!("Inserting shape points...");
             let _sp = Database::insert_many::<ShapePoint>(&database, &shape_points).await;
-            println!("Inserted shape points");
+            println!("Inserted shape points");*/
+        }
+    }
+    else if insert_trips || insert_directions {
+        println!("Getting trips and directions...");
+        let result = hrdf.to_trips_and_directions(&fahrplans);
+        let trips: Vec<Trip> = result.0;
+        let directions: Vec<Direction> = result.1;
+        println!("Got trips: {}", trips.len());
+        println!("Got directions: {}", directions.len());
+
+        if insert_directions {
+            println!("Getting direction legs and steps...");
+            let mut direction_legs: Vec<DirectionLeg> = Vec::new();
+            let mut leg_steps: Vec<LegStep> = Vec::new();
+
+            for direction in &directions {
+                let trip: &Trip = trips.iter().find(|t| t.direction_id.is_some() && t.direction_id.unwrap() == direction.id).unwrap();
+                let tstops: Vec<&TripStop> = trip_stops.iter().filter(|ts| ts.trip_id == trip.id).collect::<Vec<&TripStop>>();
+
+                let (dir_legs, l_steps) =  maps.get_direction_sub_from_direction(direction, &tstops, &stops, direction_legs.last().unwrap().id, leg_steps.last().unwrap().id).await.unwrap();
+                direction_legs.extend(dir_legs);
+                leg_steps.extend(l_steps);
+            }
+            println!("Got direction legs: {}", direction_legs.len());
+            println!("Got leg steps: {}", leg_steps.len());
+
+
+            println!("Inserting direction steps and legs...");
+            let _d = Database::insert_many::<Direction>(&database, &directions).await;
+            println!("Inserted direction steps and legs");
+        }
+
+        if insert_trips {
+            println!("Inserting trips...");
+            let _t = Database::insert_many::<Trip>(&database, &trips).await;
+            println!("Inserted trips");
         }
     }
 
     if insert_trip_stops {
-        println!("Getting trip stops...");
-        let trip_stops: Vec<TripStop> = hrdf.to_trip_stops(&fahrplans);
-        println!("Got trip stops: {}", trip_stops.len());
-
         println!("Inserting trip stops...");
         let _ts = Database::insert_many::<TripStop>(&database, &trip_stops).await;
         println!("Inserted trip stops");

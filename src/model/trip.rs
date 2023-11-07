@@ -12,7 +12,8 @@ pub struct Trip {
     pub id: i32,
     pub journey_number: i32,
     pub option_count: i16,
-    pub shape_id: i32,
+    pub shape_id: Option<i32>,
+    pub direction_id: Option<i32>,
     #[sqlx(try_from = "String")]
     pub transport_mode: TransportMode,
     pub origin_id: i32,
@@ -35,6 +36,7 @@ impl Table for Trip {
             Box::new(self.journey_number),
             Box::new(self.option_count),
             Box::new(self.shape_id),
+            Box::new(self.direction_id),
             Box::new(format!("{:?}", self.transport_mode)),
             Box::new(self.origin_id),
             Box::new(self.destination_id),
@@ -47,7 +49,7 @@ impl Table for Trip {
     }
 
     fn keys() -> String {
-        return "(id,journey_number,option_count,shape_id,transport_mode,origin_id,destination_id,bitfield_id,line_id,direction,departure_time,arrival_time)".to_string();
+        return "(id,journey_number,option_count,shape_id,direction_id,transport_mode,origin_id,destination_id,bitfield_id,line_id,direction,departure_time,arrival_time)".to_string();
     }
 
     async fn create_table(database: &Database) -> Result<PgQueryResult, Error> {
@@ -58,7 +60,8 @@ impl Table for Trip {
             id INTEGER PRIMARY KEY,
             journey_number INTEGER NOT NULL,
             option_count SMALLINT NOT NULL,
-            shape_id INTEGER NOT NULL,
+            shape_id INTEGER,
+            direction_id INTEGER,
             transport_mode VARCHAR(12) NOT NULL,
             origin_id INTEGER NOT NULL,
             destination_id INTEGER NOT NULL,
@@ -67,9 +70,6 @@ impl Table for Trip {
             direction VARCHAR(7) NOT NULL,
             departure_time TIME NOT NULL,
             arrival_time TIME NOT NULL,
-            CONSTRAINT fk_shape
-                FOREIGN KEY(shape_id)
-                    REFERENCES shapes(id),
             CONSTRAINT fk_origin
                 FOREIGN KEY(origin_id)
                     REFERENCES stops(id),
