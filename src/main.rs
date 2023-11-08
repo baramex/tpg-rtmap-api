@@ -10,7 +10,7 @@ use api::{
     line::{get_line, get_lines},
     shape::{get_shape, get_shape_points, get_shape_stops},
     stop::{get_stop, get_stops},
-    trip::{get_trip, get_trip_stops, get_trips},
+    trip::{get_trip, get_trip_stops, get_trips}, direction::{get_direction, get_direction_leg_steps, get_direction_legs}, leg::{get_leg_steps, get_leg},
 };
 
 use actix_cors::Cors;
@@ -99,10 +99,10 @@ async fn main() -> std::io::Result<()> {
     let insert_lines = false;
     let insert_stops = false;
 
-    let insert_trips = true;
-    let insert_trip_stops = true;
+    let insert_trips = false;
+    let insert_trip_stops = false;
 
-    let insert_directions = true;
+    let insert_directions = false;
 
     let insert_shapes = false;
     let insert_shape_points = false;
@@ -311,6 +311,11 @@ async fn main() -> std::io::Result<()> {
             .service(get_shape)
             .service(get_shape_points)
             .service(get_shape_stops)
+            .service(get_direction)
+            .service(get_direction_legs)
+            .service(get_direction_leg_steps)
+            .service(get_leg)
+            .service(get_leg_steps)
     })
     .bind(("127.0.0.1", 10000))?
     .run()

@@ -503,7 +503,7 @@ impl HRDF {
                     stop_id: stop.id,
                     trip_id: i,
                     sequence: j,
-                    arrival_time: if stop.arrival_time.is_empty() {
+                    arrival_time: if stop.arrival_time.is_empty() { // TODO: create time from distance time (direction_leg.duration)
                         None
                     } else {
                         Some(

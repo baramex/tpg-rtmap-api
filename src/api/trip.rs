@@ -12,14 +12,11 @@ use actix_web::{
 use chrono::{Datelike, Duration, NaiveDateTime, NaiveTime, TimeZone};
 use chrono_tz::Europe::Zurich;
 use derive_more::Display;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::ops::SubAssign;
 
 use crate::{
-    model::{
-        information::Information, shape_point::ShapePoint, shape_stop::ShapeStop, trip::Trip,
-        trip_stop::TripStop,
-    },
+    model::{information::Information, trip::Trip, trip_stop::TripStop},
     repository::database::{Database, Table},
 };
 
