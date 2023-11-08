@@ -53,9 +53,9 @@ impl Table for LegStep {
             start_lng DOUBLE PRECISION NOT NULL,
             end_lat DOUBLE PRECISION NOT NULL,
             end_lng DOUBLE PRECISION NOT NULL,
-            CONSTRAINT fk_step
-                FOREIGN KEY(step_id)
-                    REFERENCES steps(id)
+            CONSTRAINT fk_leg
+                FOREIGN KEY(leg_id)
+                    REFERENCES direction_legs(id)
         )",
                     Self::TABLE_NAME
                 )

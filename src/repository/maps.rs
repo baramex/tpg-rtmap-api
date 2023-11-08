@@ -2,8 +2,8 @@ use reqwest::{Error, Response};
 use serde::{Deserialize, Serialize};
 
 use crate::model::{
-    direction::Direction, direction_leg::DirectionLeg, leg_step::LegStep, stop::Stop,
-    trip::Trip, trip_stop::TripStop, shape_stop::ShapeStop, shape_point::ShapePoint,
+    direction::Direction, direction_leg::DirectionLeg, leg_step::LegStep, shape_point::ShapePoint,
+    shape_stop::ShapeStop, stop::Stop, trip::Trip, trip_stop::TripStop,
 };
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -61,14 +61,14 @@ struct Position {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RoadResponse {
     pub snappedPoints: Vec<SnappedPoint>,
-    pub warningMessage: Option<String>
+    pub warningMessage: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SnappedPoint {
     pub location: Location,
     pub originalIndex: Option<i32>,
-    pub placeId: String
+    pub placeId: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -99,74 +99,76 @@ impl Maps {
         let mut direction_legs: Vec<DirectionLeg> = Vec::new();
         let mut leg_steps: Vec<LegStep> = Vec::new();
 
-        let origin = stops
-            .iter()
-            .find(|s| s.id == direction.origin_id)
-            .expect("Origin not found");
-        let destination = stops
-            .iter()
-            .find(|s| s.id == direction.destination_id)
-            .expect("Destination not found");
+        while trip_stops.len() > 0 {
+            let max = if trip_stops.len() > 25 {
+                25
+            } else {
+                trip_stops.len()
+            };
+            let waypoints: Vec<Location> = (&trip_stops)[0..max]
+                .iter()
+                .map(|trip_stop| {
+                    let stop = stops.iter().find(|s| s.id == trip_stop.stop_id).unwrap();
+                    Location {
+                        latitude: stop.latitude,
+                        longitude: stop.longitude,
+                    }
+                })
+                .collect::<Vec<Location>>();
 
-        let waypoints: String = (&trip_stops)[1..trip_stops.len() - 1]
-            .iter()
-            .map(|trip_stop| {
-                let stop = stops.iter().find(|s| s.id == trip_stop.stop_id).unwrap();
-                self.format_position(stop.latitude, stop.longitude)
-            })
-            .collect::<Vec<String>>()
-            .join("|"); // TODO: HANDLE +25 WAYPOINTS
+            let res: Response = reqwest::get(format!(
+                "https://maps.googleapis.com/maps/api/directions/json?key={}&origin={}&destination={}&waypoints={}",
+                self.api_key,
+                self.format_position(waypoints[0].latitude, waypoints[0].longitude),
+                self.format_position(waypoints.last().unwrap().latitude, waypoints.last().unwrap().longitude),
+                if max > 1 { waypoints[1..max-1].iter().map(|waypoint| self.format_position(waypoint.latitude, waypoint.longitude)).collect::<Vec<String>>().join("|") } else { "".to_string() }
+            ))
+            .await?;
 
-        let res: Response = reqwest::get(format!(
-            "https://maps.googleapis.com/maps/api/directions/json?key={}&origin={}&destination={}&waypoints={}",
-            self.api_key,
-            self.format_position(origin.latitude, origin.longitude),
-            self.format_position(destination.latitude, destination.longitude),
-            waypoints
-        ))
-        .await?;
+            if res.status().is_success() {
+                let direction_response = res.json::<DirectionResponse>().await?;
+                let route_response = direction_response.routes.first().unwrap();
 
-        if res.status().is_success() {
-            let direction_response = res.json::<DirectionResponse>().await?;
-            let route_response = direction_response.routes.first().unwrap();
-
-            let mut i: i16 = 1;
-            for leg_response in &route_response.legs {
-                let leg = DirectionLeg {
-                    id: leg_id,
-                    direction_id: direction.id,
-                    distance: leg_response.distance.value,
-                    duration: leg_response.duration.value,
-                    origin_id: trip_stops[i as usize - 1].stop_id,
-                    destination_id: trip_stops[i as usize - 1].stop_id,
-                    sequence: i,
-                };
-
-                direction_legs.push(leg);
-
-                let mut j: i16 = 1;
-                for step in &leg_response.steps {
-                    let leg_step = LegStep {
-                        id: step_id,
-                        distance: step.distance.value,
-                        duration: step.duration.value,
-                        leg_id,
-                        sequence: j,
-                        start_lat: step.start_location.lat,
-                        start_lng: step.start_location.lng,
-                        end_lat: step.end_location.lat,
-                        end_lng: step.end_location.lng,
+                let mut i: i16 = 1;
+                for leg_response in &route_response.legs {
+                    let leg = DirectionLeg {
+                        id: leg_id,
+                        direction_id: direction.id,
+                        distance: leg_response.distance.value,
+                        duration: leg_response.duration.value,
+                        origin_id: trip_stops[i as usize - 1].stop_id,
+                        destination_id: trip_stops[i as usize - 1].stop_id,
+                        sequence: i,
                     };
 
-                    leg_steps.push(leg_step);
+                    direction_legs.push(leg);
 
-                    j += 1;
-                    step_id += 1;
+                    let mut j: i16 = 1;
+                    for step in &leg_response.steps {
+                        let leg_step = LegStep {
+                            id: step_id,
+                            distance: step.distance.value,
+                            duration: step.duration.value,
+                            leg_id,
+                            sequence: j,
+                            start_lat: step.start_location.lat,
+                            start_lng: step.start_location.lng,
+                            end_lat: step.end_location.lat,
+                            end_lng: step.end_location.lng,
+                        };
+
+                        leg_steps.push(leg_step);
+
+                        j += 1;
+                        step_id += 1;
+                    }
+
+                    i += 1;
+                    leg_id += 1;
                 }
-
-                i += 1;
-                leg_id += 1;
             }
+
+            trip_stops = (&trip_stops)[max..].to_vec();
         }
 
         return Ok((direction_legs, leg_steps));

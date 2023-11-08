@@ -17,12 +17,14 @@ use actix_cors::Cors;
 use actix_web::{middleware::Logger, web::Data, App, HttpServer};
 use dotenv::dotenv;
 use model::{
-    bitfield::Bitfield, information::Information, line::Line, shape::Shape,
-    shape_point::ShapePoint, shape_stop::ShapeStop, stop::Stop, trip::Trip, trip_stop::TripStop, direction::Direction, direction_leg::DirectionLeg, leg_step::LegStep,
+    bitfield::Bitfield, direction::Direction, direction_leg::DirectionLeg,
+    information::Information, leg_step::LegStep, line::Line, shape::Shape, shape_point::ShapePoint,
+    shape_stop::ShapeStop, stop::Stop, trip::Trip, trip_stop::TripStop,
 };
 use repository::{
     database::Database,
-    hrdf::{CornerDates, Fahrplan, HRDF}, maps::Maps,
+    hrdf::{CornerDates, Fahrplan, HRDF},
+    maps::Maps,
 };
 use sqlx::{
     postgres::{PgConnectOptions, PgPoolOptions},
@@ -97,10 +99,10 @@ async fn main() -> std::io::Result<()> {
     let insert_lines = false;
     let insert_stops = false;
 
-    let insert_trips = false;
-    let insert_trip_stops = false;
+    let insert_trips = true;
+    let insert_trip_stops = true;
 
-    let insert_directions = false;
+    let insert_directions = true;
 
     let insert_shapes = false;
     let insert_shape_points = false;
@@ -139,7 +141,13 @@ async fn main() -> std::io::Result<()> {
         println!("Inserted information");
     }
 
-    if insert_trips || insert_trip_stops || insert_stops || insert_bitfields || insert_shapes {
+    if insert_trips
+        || insert_trip_stops
+        || insert_stops
+        || insert_bitfields
+        || insert_shapes
+        || insert_directions
+    {
         println!("Getting fahrplans...");
         let res = hrdf.get_fahrplans();
         if res.is_err() {
@@ -212,8 +220,7 @@ async fn main() -> std::io::Result<()> {
             let _sp = Database::insert_many::<ShapePoint>(&database, &shape_points).await;
             println!("Inserted shape points");*/
         }
-    }
-    else if insert_trips || insert_directions {
+    } else if insert_trips || insert_directions {
         println!("Getting trips and directions...");
         let result = hrdf.to_trips_and_directions(&fahrplans);
         let trips: Vec<Trip> = result.0;
@@ -227,20 +234,44 @@ async fn main() -> std::io::Result<()> {
             let mut leg_steps: Vec<LegStep> = Vec::new();
 
             for direction in &directions {
-                let trip: &Trip = trips.iter().find(|t| t.direction_id.is_some() && t.direction_id.unwrap() == direction.id).unwrap();
-                let tstops: Vec<&TripStop> = trip_stops.iter().filter(|ts| ts.trip_id == trip.id).collect::<Vec<&TripStop>>();
+                let trip: &Trip = trips
+                    .iter()
+                    .find(|t| t.direction_id.is_some() && t.direction_id.unwrap() == direction.id)
+                    .unwrap();
+                let tstops: Vec<&TripStop> = trip_stops
+                    .iter()
+                    .filter(|ts| ts.trip_id == trip.id)
+                    .collect::<Vec<&TripStop>>();
 
-                let (dir_legs, l_steps) =  maps.get_direction_sub_from_direction(direction, &tstops, &stops, direction_legs.last().unwrap().id, leg_steps.last().unwrap().id).await.unwrap();
+                let (dir_legs, l_steps) = maps
+                    .get_direction_sub_from_direction(
+                        direction,
+                        &tstops,
+                        &stops,
+                        if direction_legs.len() > 0 {
+                            direction_legs.last().unwrap().id
+                        } else {
+                            1
+                        },
+                        if leg_steps.len() > 0 {
+                            leg_steps.last().unwrap().id
+                        } else {
+                            1
+                        },
+                    )
+                    .await
+                    .unwrap();
                 direction_legs.extend(dir_legs);
                 leg_steps.extend(l_steps);
             }
             println!("Got direction legs: {}", direction_legs.len());
             println!("Got leg steps: {}", leg_steps.len());
 
-
-            println!("Inserting direction steps and legs...");
+            println!("Inserting direction, steps and legs...");
             let _d = Database::insert_many::<Direction>(&database, &directions).await;
-            println!("Inserted direction steps and legs");
+            let _dl = Database::insert_many::<DirectionLeg>(&database, &direction_legs).await;
+            let _ls = Database::insert_many::<LegStep>(&database, &leg_steps).await;
+            println!("Inserted direction, steps and legs");
         }
 
         if insert_trips {
