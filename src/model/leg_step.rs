@@ -46,7 +46,7 @@ impl Table for LegStep {
                     "CREATE TABLE IF NOT EXISTS {} (
             id INTEGER PRIMARY KEY,
             leg_id INTEGER NOT NULL,
-            distance DOUBLE PRECISION NOT NULL,
+            distance INTEGER NOT NULL,
             duration INTEGER NOT NULL,
             sequence SMALLINT NOT NULL,
             start_lat DOUBLE PRECISION NOT NULL,

@@ -6,7 +6,7 @@ use chrono::{NaiveDate, NaiveTime};
 use log::error;
 use sqlx::postgres::{PgArguments, PgConnectOptions, PgPool, PgPoolOptions, PgQueryResult, PgRow};
 use sqlx::query::QueryAs;
-use sqlx::{Error, Postgres, Type};
+use sqlx::{Error, Postgres};
 
 #[async_trait]
 pub trait Table {

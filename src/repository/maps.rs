@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::model::{
     direction::Direction, direction_leg::DirectionLeg, leg_step::LegStep, shape_point::ShapePoint,
-    shape_stop::ShapeStop, stop::Stop, trip::Trip, trip_stop::TripStop,
+    shape_stop::ShapeStop, stop::Stop, trip_stop::TripStop,
 };
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -99,6 +99,7 @@ impl Maps {
         let mut direction_legs: Vec<DirectionLeg> = Vec::new();
         let mut leg_steps: Vec<LegStep> = Vec::new();
 
+        let mut i: i16 = 1;
         while trip_stops.len() > 0 {
             let max = if trip_stops.len() > 25 {
                 25
@@ -129,7 +130,6 @@ impl Maps {
                 let direction_response = res.json::<DirectionResponse>().await?;
                 let route_response = direction_response.routes.first().unwrap();
 
-                let mut i: i16 = 1;
                 for leg_response in &route_response.legs {
                     let leg = DirectionLeg {
                         id: leg_id,

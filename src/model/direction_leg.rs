@@ -42,7 +42,7 @@ impl Table for DirectionLeg {
                     "CREATE TABLE IF NOT EXISTS {} (
             id INTEGER PRIMARY KEY,
             direction_id INTEGER NOT NULL,
-            distance DOUBLE PRECISION NOT NULL,
+            distance INTEGER NOT NULL,
             duration INTEGER NOT NULL,
             sequence SMALLINT NOT NULL,
             origin_id INTEGER NOT NULL,
