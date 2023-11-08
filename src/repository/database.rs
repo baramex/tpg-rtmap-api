@@ -6,7 +6,7 @@ use chrono::{NaiveDate, NaiveTime};
 use log::error;
 use sqlx::postgres::{PgArguments, PgConnectOptions, PgPool, PgPoolOptions, PgQueryResult, PgRow};
 use sqlx::query::QueryAs;
-use sqlx::{Error, Postgres};
+use sqlx::{Error, Postgres, Type};
 
 #[async_trait]
 pub trait Table {
@@ -137,6 +137,9 @@ impl Database {
                     final_query = final_query.bind(n);
                 } else if TypeId::of::<NaiveTime>() == value.type_id() {
                     let n: NaiveTime = *value.downcast::<NaiveTime>().unwrap();
+                    final_query = final_query.bind(n);
+                } else if TypeId::of::<Option<i32>>() == value.type_id() {
+                    let n: i32 = value.downcast::<Option<i32>>().unwrap().unwrap_or(0);
                     final_query = final_query.bind(n);
                 } else {
                     panic!("Unknown type");

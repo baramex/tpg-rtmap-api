@@ -137,7 +137,7 @@ impl Maps {
                         distance: leg_response.distance.value,
                         duration: leg_response.duration.value,
                         origin_id: trip_stops[i as usize - 1].stop_id,
-                        destination_id: trip_stops[i as usize - 1].stop_id,
+                        destination_id: trip_stops[i as usize].stop_id,
                         sequence: i,
                     };
 
