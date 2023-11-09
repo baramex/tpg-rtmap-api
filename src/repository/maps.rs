@@ -130,8 +130,6 @@ impl Maps {
                 let direction_response = res.json::<DirectionResponse>().await?;
                 let route_response = direction_response.routes.first().unwrap();
 
-                println!("{:?}", route_response);
-
                 let mut a: i32 = 0;
                 for leg_response in &route_response.legs {
                     let leg = DirectionLeg {
@@ -172,7 +170,7 @@ impl Maps {
                 }
             }
 
-            trip_stops = (&trip_stops)[max..].to_vec();
+            trip_stops = (&trip_stops)[max - 1..].to_vec();
         }
 
         return Ok((direction_legs, leg_steps));
