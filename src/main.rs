@@ -102,7 +102,7 @@ async fn main() -> std::io::Result<()> {
     let insert_trips = false;
     let insert_trip_stops = false;
 
-    let insert_directions = false;
+    let insert_directions = true;
 
     let insert_shapes = false;
     let insert_shape_points = false;

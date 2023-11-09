@@ -130,14 +130,17 @@ impl Maps {
                 let direction_response = res.json::<DirectionResponse>().await?;
                 let route_response = direction_response.routes.first().unwrap();
 
+                println!("{:?}", route_response);
+
+                let mut a: i32 = 0;
                 for leg_response in &route_response.legs {
                     let leg = DirectionLeg {
                         id: leg_id,
                         direction_id: direction.id,
                         distance: leg_response.distance.value,
                         duration: leg_response.duration.value,
-                        origin_id: trip_stops[i as usize - 1].stop_id,
-                        destination_id: trip_stops[i as usize].stop_id,
+                        origin_id: trip_stops[a as usize].stop_id,
+                        destination_id: trip_stops[a as usize + 1].stop_id,
                         sequence: i,
                     };
 
@@ -164,6 +167,7 @@ impl Maps {
                     }
 
                     i += 1;
+                    a += 1;
                     leg_id += 1;
                 }
             }
