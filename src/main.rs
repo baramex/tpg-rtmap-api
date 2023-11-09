@@ -102,7 +102,7 @@ async fn main() -> std::io::Result<()> {
     let insert_trips = false;
     let insert_trip_stops = false;
 
-    let insert_directions = true;
+    let insert_directions = false;
 
     let insert_shapes = false;
     let insert_shape_points = false;
@@ -249,12 +249,12 @@ async fn main() -> std::io::Result<()> {
                         &tstops,
                         &stops,
                         if direction_legs.len() > 0 {
-                            direction_legs.last().unwrap().id
+                            direction_legs.last().unwrap().id + 1
                         } else {
                             1
                         },
                         if leg_steps.len() > 0 {
-                            leg_steps.last().unwrap().id
+                            leg_steps.last().unwrap().id + 1
                         } else {
                             1
                         },

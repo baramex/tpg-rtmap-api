@@ -170,7 +170,11 @@ impl Maps {
                 }
             }
 
-            trip_stops = (&trip_stops)[max - 1..].to_vec();
+            if trip_stops.len() > max {
+                trip_stops = (&trip_stops)[max - 1..].to_vec();
+            } else {
+                trip_stops = Vec::new();
+            }
         }
 
         return Ok((direction_legs, leg_steps));
