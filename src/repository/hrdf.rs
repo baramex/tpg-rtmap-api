@@ -3,13 +3,14 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::model::{
     bitfield::Bitfield,
+    direction::Direction as RouteDirection,
     line::{Line, TransportMode},
     shape::Shape,
     shape_stop::ShapeStop,
     stop::Stop,
     trip::Trip,
-    trip_stop::TripStop,
-    types::{ColorType, Direction}, direction::Direction as RouteDirection,
+    trip_stop::{self, TripStop},
+    types::{ColorType, Direction}, direction_leg::{self, DirectionLeg}, leg_step::LegStep,
 };
 use std::{
     cmp,
@@ -17,6 +18,8 @@ use std::{
     io::{BufRead, BufReader, Error, Lines},
     path::PathBuf,
 };
+
+use super::maps::Maps;
 
 pub struct HRDF {
     pub directory: PathBuf,
@@ -442,7 +445,12 @@ impl HRDF {
 
             if direction.is_none() {
                 si += 1;
-                let temp_dir = RouteDirection { id: si, identifier, origin_id: fahrplan.g.origin_id, destination_id: fahrplan.g.destination_id };
+                let temp_dir = RouteDirection {
+                    id: si,
+                    identifier,
+                    origin_id: fahrplan.g.origin_id,
+                    destination_id: fahrplan.g.destination_id,
+                };
 
                 directions.push(temp_dir);
                 direction = Some(directions.last().unwrap());
@@ -489,6 +497,120 @@ impl HRDF {
         return (trips, directions);
     }
 
+    // create trip stops taking account of the route duration (from google maps)
+    pub async fn get_trip_stops_with_directions(
+        &self,
+        fahrplans: &Vec<Fahrplan>,
+        directions: &Vec<RouteDirection>,
+        stops: &Vec<Stop>,
+        maps: Maps,
+    ) -> Result<(Vec<TripStop>, Vec<DirectionLeg>, Vec<LegStep>), Error> {
+        let mut trip_stops: Vec<TripStop> = Vec::new();
+        let mut i: i32 = 1;
+
+        let mut direction_legs: Vec<DirectionLeg> = Vec::new();
+        let mut leg_steps: Vec<LegStep> = Vec::new();
+        let mut leg_id = 1;
+        let mut step_id = 1;
+
+        for fahrplan in fahrplans {
+            let mut j: i16 = 0;
+
+            let identifier = fahrplan
+                .stops
+                .iter()
+                .map(|stop| {
+                    j += 1;
+                    j.to_string() + stop.id.to_string().as_str()
+                })
+                .collect::<Vec<String>>()
+                .join("");
+            let direction = directions.iter().find(|d| d.identifier == identifier);
+
+            if direction.is_none() {
+                continue;
+            }
+
+            let tstops: Vec<&Stop> = fahrplan
+                .stops
+                .iter()
+                .map(|stop| stops.iter().find(|s| s.id == stop.id).unwrap()).collect();
+            let (dlegs, lsteps) =
+                maps.get_direction_sub_from_direction(&direction.unwrap(), &tstops, stops, leg_id, step_id).await.unwrap();
+
+            direction_legs.extend(dlegs);
+            leg_steps.extend(lsteps);
+
+            leg_id = direction_legs.len() as i32 + 1;
+            step_id = leg_steps.len() as i32 + 1;
+
+            for stop in &fahrplan.stops {
+                let mut j: i16 = 1;
+
+                let previous_stop: Option<i32> = if trip_stops.last().is_some() {
+                    Some(trip_stops.last().unwrap().stop_id)
+                } else {
+                    None
+                };
+                let previous_departure: Option<NaiveTime> = if trip_stops.last().is_some() { Some(trip_stops.last().unwrap().departure_time.unwrap()) } else { None };
+                let mut arrival_time: Option<NaiveTime> = if stop.arrival_time.is_empty() { None } else { Some(NaiveTime::from_hms_opt(
+                    stop.arrival_time[1..3].parse::<u32>().unwrap() % 24, // TODO: manage trips that are after 00h
+                    stop.arrival_time[3..5].parse().unwrap(),
+                    0,
+                )
+                .unwrap())
+                };
+
+                let departure_time: Option<NaiveTime> = if stop.departure_time.is_empty() {
+                    None
+                } else {
+                    Some(NaiveTime::from_hms_opt(
+                        stop.departure_time[1..3].parse::<u32>().unwrap() % 24, // TODO: manage trips that are after 00h
+                        stop.departure_time[3..5].parse().unwrap(),
+                        0,
+                    )
+                    .unwrap())
+                };
+
+                let stop_duration: i64 = if arrival_time.is_some() && departure_time.is_some() {
+                    departure_time.unwrap().signed_duration_since(arrival_time.unwrap()).num_seconds()
+                } else {
+                    0
+                };
+
+                if arrival_time.is_some() && previous_departure.is_some() && previous_stop.is_some() {
+                    let trip_duration = direction_legs.iter().find(|dleg| dleg.origin_id == previous_stop.unwrap() && dleg.destination_id == stop.id).unwrap().duration;
+                    let real_arrival_time = previous_departure.unwrap() + chrono::Duration::seconds(trip_duration as i64);
+
+                    let difference = arrival_time.unwrap().signed_duration_since(real_arrival_time);
+                    if difference.num_seconds().abs() < 45 {
+                        arrival_time = Some(real_arrival_time);
+                    }
+                }
+
+                let trip_stop: TripStop = TripStop {
+                    id: i,
+                    stop_id: stop.id,
+                    trip_id: fahrplan.z.journey_number,
+                    sequence: j,
+                    arrival_time,
+                    departure_time: if arrival_time.is_some() {
+                        Some(arrival_time.unwrap() + chrono::Duration::seconds(stop_duration))
+                    } else {
+                        departure_time
+                    },
+                };
+
+                trip_stops.push(trip_stop);
+
+                j += 1;
+                i += 1;
+            }
+        }
+
+        Ok((trip_stops, direction_legs, leg_steps))
+    }
+
     pub fn to_trip_stops(&self, fahrplans: &Vec<Fahrplan>) -> Vec<TripStop> {
         let mut trip_stops: Vec<TripStop> = Vec::new();
         let mut i: i32 = 1;
@@ -503,7 +625,7 @@ impl HRDF {
                     stop_id: stop.id,
                     trip_id: i,
                     sequence: j,
-                    arrival_time: if stop.arrival_time.is_empty() { // TODO: create time from distance time (direction_leg.duration)
+                    arrival_time: if stop.arrival_time.is_empty() {
                         None
                     } else {
                         Some(

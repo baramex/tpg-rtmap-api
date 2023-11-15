@@ -85,13 +85,12 @@ impl Maps {
     pub async fn get_direction_sub_from_direction(
         &self,
         direction: &Direction,
-        _trip_stops: &Vec<&TripStop>,
+        _trip_stops: &Vec<&Stop>,
         stops: &Vec<Stop>,
         start_leg_id: i32,
         strat_step_id: i32,
     ) -> Result<(Vec<DirectionLeg>, Vec<LegStep>), Error> {
-        let mut trip_stops: Vec<&TripStop> = _trip_stops.to_vec();
-        trip_stops.sort_by_key(|s: &&TripStop| s.sequence);
+        let mut trip_stops: Vec<&Stop> = _trip_stops.iter().map(|s| *s).collect::<Vec<&Stop>>();
 
         let mut leg_id = start_leg_id;
         let mut step_id = strat_step_id;
@@ -109,7 +108,7 @@ impl Maps {
             let waypoints: Vec<Location> = (&trip_stops)[0..max]
                 .iter()
                 .map(|trip_stop| {
-                    let stop = stops.iter().find(|s| s.id == trip_stop.stop_id).unwrap();
+                    let stop = stops.iter().find(|s| s.id == trip_stop.id).unwrap();
                     Location {
                         latitude: stop.latitude,
                         longitude: stop.longitude,
@@ -137,8 +136,8 @@ impl Maps {
                         direction_id: direction.id,
                         distance: leg_response.distance.value,
                         duration: leg_response.duration.value,
-                        origin_id: trip_stops[a as usize].stop_id,
-                        destination_id: trip_stops[a as usize + 1].stop_id,
+                        origin_id: trip_stops[a as usize].id,
+                        destination_id: trip_stops[a as usize + 1].id,
                         sequence: i,
                     };
 
@@ -146,7 +145,7 @@ impl Maps {
 
                     let mut j: i16 = 1;
                     for step in &leg_response.steps {
-                        let leg_step = LegStep {
+                        let leg_step = LegStep { // TO THINK: call snap to road with the steps ? negative point: no distance/duration
                             id: step_id,
                             distance: step.distance.value,
                             duration: step.duration.value,
