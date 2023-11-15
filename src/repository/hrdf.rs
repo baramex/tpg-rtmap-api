@@ -611,7 +611,7 @@ impl HRDF {
                     departure_time
                         .unwrap()
                         .signed_duration_since(arrival_time.unwrap())
-                        .num_seconds()
+                        .num_seconds() + 15
                 } else {
                     0
                 };
