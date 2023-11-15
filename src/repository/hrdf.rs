@@ -632,7 +632,7 @@ impl HRDF {
                     let difference = arrival_time
                         .unwrap()
                         .signed_duration_since(real_arrival_time);
-                    if difference.num_seconds().abs() < 45 {
+                    if difference.num_seconds().abs() < 60 {
                         arrival_time = Some(real_arrival_time);
                     }
                 }
