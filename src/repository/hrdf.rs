@@ -18,6 +18,7 @@ use std::{
     cmp,
     fs::File,
     io::{BufRead, BufReader, Error, Lines},
+    panic,
     path::PathBuf,
 };
 
@@ -44,16 +45,21 @@ macro_rules! define_record {
         }
 
         impl $record_name {
-            pub fn from_line(line: &str) -> Self {
+            pub fn from_line(line: &str) -> Result<Self, Box<dyn std::error::Error>> {
                 $(
                     let chars: Vec<&str> = UnicodeSegmentation::graphemes(line, true).collect();
-                    let $field_name: $field_type = chars[$start..cmp::min($end, chars.len())].join("").to_string().trim().parse::<$field_type>().unwrap_or_else(|_| panic!("Failed to parse field {} from {}", stringify!($field_name), line[$start..cmp::min($end, chars.len())].to_string()));
+                    let str = chars[$start..cmp::min($end, chars.len())].join("");
+                    let $field_name = str.trim().parse::<$field_type>();
+
+                    if($field_name.is_err()) {
+                        Err(format!("Failed to parse field {} from {}", stringify!($field_name), str))?;
+                    }
                 )*
-                $record_name {
+                Ok($record_name {
                     $(
-                        $field_name,
+                        $field_name: $field_name.unwrap(),
                     )*
-                }
+                })
             }
         }
     }
@@ -212,7 +218,7 @@ impl HRDF {
         let mut bitfields: Vec<Bitfield> = Vec::new();
 
         while let Some(Ok(line)) = lines.next() {
-            let bf_line: RawBitfeld = RawBitfeld::from_line(&line);
+            let bf_line: RawBitfeld = RawBitfeld::from_line(&line).unwrap();
 
             if ids.contains(&bf_line.number) {
                 let bitfield: Bitfield = Bitfield {
@@ -251,7 +257,7 @@ impl HRDF {
             let field: &str = &line[8..9];
 
             if field == "N" {
-                let line_n: RawLinieN = RawLinieN::from_line(&line);
+                let line_n: RawLinieN = RawLinieN::from_line(&line).unwrap();
                 let mut line_f: Option<RawLinieF> = None;
                 let mut line_b: Option<RawLinieB> = None;
 
@@ -259,9 +265,9 @@ impl HRDF {
                     let field: &str = &line2[8..9];
 
                     if field == "F" {
-                        line_f = Some(RawLinieF::from_line(&line2));
+                        line_f = Some(RawLinieF::from_line(&line2).unwrap());
                     } else if field == "B" {
-                        line_b = Some(RawLinieB::from_line(&line2));
+                        line_b = Some(RawLinieB::from_line(&line2).unwrap());
                     } else {
                         break;
                     }
@@ -296,7 +302,7 @@ impl HRDF {
         let mut stops: Vec<Stop> = Vec::new();
 
         while let Some(Ok(line)) = lines.next() {
-            let stop: RawStop = RawStop::from_line(&line);
+            let stop: RawStop = RawStop::from_line(&line).unwrap();
 
             if ids.contains(&stop.id) {
                 let stop: Stop = Stop {
@@ -611,7 +617,8 @@ impl HRDF {
                     departure_time
                         .unwrap()
                         .signed_duration_since(arrival_time.unwrap())
-                        .num_seconds() + 15
+                        .num_seconds()
+                        + 15
                 } else {
                     0
                 };
@@ -721,7 +728,7 @@ impl HRDF {
 
         while let Some(Ok(line)) = lines.next() {
             if line.starts_with("*Z") {
-                let line_z: RawFahrplanZ = RawFahrplanZ::from_line(&line);
+                let line_z: RawFahrplanZ = RawFahrplanZ::from_line(&line).unwrap();
 
                 if line_z.agency_id != self.agency_id {
                     continue;
@@ -735,21 +742,26 @@ impl HRDF {
 
                 while let Some(Ok(line2)) = lines.next() {
                     if line2.starts_with("*G") {
-                        line_g = Some(RawFahrplanG::from_line(&line2));
+                        line_g = Some(RawFahrplanG::from_line(&line2).unwrap());
                     } else if line2.starts_with("*A VE") {
-                        line_a = Some(RawFahrplanA::from_line(&line2));
+                        line_a = Some(RawFahrplanA::from_line(&line2).unwrap_or(RawFahrplanA {
+                            _origin_id: 0,
+                            _destination_id: 0,
+                            bit_field_number: 17
+                        }));
                     } else if line2.starts_with("*L") {
-                        line_l = Some(RawFahrplanL::from_line(&line2));
+                        line_l = Some(RawFahrplanL::from_line(&line2).unwrap());
                     } else if line2.starts_with("*R") {
-                        line_r = Some(RawFahrplanR::from_line(&line2));
+                        line_r = Some(RawFahrplanR::from_line(&line2).unwrap());
                     } else if !line2.starts_with("*") {
-                        stops.push(RawFahrplanStop::from_line(&line2));
-                    } else {
+                        stops.push(RawFahrplanStop::from_line(&line2).unwrap());
+                    } else if !line2.starts_with("*A NF") && !line2.starts_with("*A SM") && !line2.starts_with("*A SD") {
                         break;
                     }
                 }
 
                 if line_g.is_none() || line_a.is_none() || line_l.is_none() || line_r.is_none() {
+                    println!("Incomplete fahrplan: {:?} {:?} {:?} {:?} {:?}", line_z.journey_number, line_g, line_a, line_l, line_r);
                     continue;
                 }
 

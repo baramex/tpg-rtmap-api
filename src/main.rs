@@ -101,13 +101,13 @@ async fn main() -> std::io::Result<()> {
     let insert_lines = false;
     let insert_stops = false;
 
-    let insert_trips = true;
-    let insert_trip_stops = true;
+    let insert_trips = false;
+    let insert_trip_stops = false;
 
-    let insert_directions = true;
+    let insert_directions = false;
 
-    let insert_shapes = false;
-    let insert_shape_points = false;
+    let insert_shapes = false; // UNSTABLE
+    let insert_shape_points = false; // UNSTABLE
 
     let insert_information = false;
 
@@ -190,7 +190,7 @@ async fn main() -> std::io::Result<()> {
         println!("Inserted trip stops");
     }
 
-    if insert_trips && (insert_shapes || insert_shape_points) {
+    if insert_trips && (insert_shapes || insert_shape_points) { // UNSTABLE
         println!("Getting trips and shapes...");
         let result = hrdf.to_trips_and_shapes_and_shape_stops(&fahrplans);
         let trips: Vec<Trip> = result.0;
@@ -225,7 +225,7 @@ async fn main() -> std::io::Result<()> {
             let _sp = Database::insert_many::<ShapePoint>(&database, &shape_points).await;
             println!("Inserted shape points");*/
         }
-    } else if insert_trips || insert_directions {
+    } else if insert_trips || insert_directions { // STABLE
         println!("Getting trips and directions...");
         let result = hrdf.to_trips_and_directions(&fahrplans);
         let trips: Vec<Trip> = result.0;
